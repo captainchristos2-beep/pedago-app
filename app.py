@@ -6,254 +6,238 @@ import base64
 import io
 import os
 import time
-import json
 import pandas as pd
 import plotly.express as px
-from datetime import datetime
 
 # =================================================================
-# 1. PREMIUM ENGINE CONFIGURATION & STYLING
+# MODULE 1: UI & DESIGN SYSTEM (THE LOOK)
 # =================================================================
-st.set_page_config(page_title="PedaGO Genesis Pro v1.7", page_icon="🧬", layout="wide")
+class UI:
+    @staticmethod
+    def apply_styles():
+        st.markdown("""
+            <style>
+            @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Outfit:wght@300;600;900&display=swap');
+            
+            /* Genesis Gradient Background */
+            .stApp {
+                background: linear-gradient(-45deg, #0f172a, #1e293b, #0ea5e9, #6366f1);
+                background-size: 400% 400%;
+                animation: gradient 15s ease infinite;
+            }
+            @keyframes gradient {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
 
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Outfit:wght@300;400;600;900&display=swap');
+            /* Glassmorphism Components */
+            .card {
+                background: rgba(255, 255, 255, 0.08);
+                backdrop-filter: blur(25px);
+                border-radius: 30px;
+                padding: 30px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+                color: white;
+                margin-bottom: 20px;
+            }
 
-    /* Animated Gradient Background */
-    .stApp {
-        background: linear-gradient(-45deg, #0f172a, #1e293b, #0ea5e9, #6366f1);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-    }
-    @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
+            .pricing-card {
+                background: white;
+                border-radius: 25px;
+                padding: 40px;
+                text-align: center;
+                color: #1e293b;
+                border: 2px solid #e2e8f0;
+                transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .pricing-card:hover { border-color: #0ea5e9; transform: translateY(-10px); }
+            
+            .premium-border { border: 4px solid #ffd700 !important; }
 
-    /* Glassmorphism Containers */
-    .genesis-card {
-        background: rgba(255, 255, 255, 0.07);
-        backdrop-filter: blur(20px);
-        border-radius: 35px;
-        padding: 35px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-        color: white;
-        margin-bottom: 20px;
-    }
-
-    /* Pricing Tiers */
-    .pricing-card {
-        background: white;
-        border-radius: 25px;
-        padding: 30px;
-        text-align: center;
-        color: #1e293b;
-        border: 4px solid transparent;
-        transition: 0.3s;
-    }
-    .pricing-premium { border-color: #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-
-    /* HUD Stats */
-    .hud-item { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; color: #ffd700; }
-
-    /* Custom Buttons */
-    .stButton>button {
-        width: 100%;
-        border-radius: 20px;
-        background: linear-gradient(90deg, #0ea5e9, #6366f1);
-        color: white;
-        font-weight: 700;
-        border: none;
-        padding: 12px;
-        transition: 0.3s;
-    }
-    .stButton>button:hover { transform: scale(1.03); box-shadow: 0 0 15px rgba(14, 165, 233, 0.5); }
-    </style>
-    """, unsafe_allow_html=True)
-
-# =================================================================
-# 2. CORE DATABASE & SESSION MANAGEMENT (SAAS LOGIC)
-# =================================================================
-if "user" not in st.session_state:
-    st.session_state.user = {
-        "is_auth": False,
-        "plan": "Free", # Free / Premium
-        "xp": 0,
-        "energy": 100,
-        "messages_today": 0,
-        "name": "Εξερευνητής",
-        "streak": 1
-    }
-
-if "scene" not in st.session_state: st.session_state.scene = "login"
-if "history" not in st.session_state: st.session_state.history = []
-if "audio_out" not in st.session_state: st.session_state.audio_out = None
-
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-def play_audio(text):
-    try:
-        tts = gTTS(text=text, lang='el')
-        fp = io.BytesIO()
-        tts.write_to_fp(fp)
-        fp.seek(0)
-        b64 = base64.b64encode(fp.read()).decode()
-        return f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
-    except: return ""
+            /* Professional HUD */
+            .hud-label { font-family: 'Outfit', sans-serif; font-weight: 800; color: #ffd700; font-size: 1rem; }
+            
+            /* Buttons */
+            .stButton>button {
+                border-radius: 15px;
+                background: linear-gradient(90deg, #0ea5e9, #6366f1);
+                color: white;
+                font-weight: 700;
+                border: none;
+                height: 3.5rem;
+                transition: 0.3s ease;
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
 # =================================================================
-# 3. SAAS AUTH & SUBSCRIPTION LAYER
+# MODULE 2: SAAS & USER CORE (THE RULES)
 # =================================================================
-if st.session_state.scene == "login":
-    st.markdown("<h1 style='text-align:center; color:white; font-family:Comfortaa; font-size:4rem;'>PedaGO Genesis</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#cbd5e1;'>Η επόμενη γενιά στην AI εκπαίδευση</p>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""<div class='pricing-card'>
-            <h2>Basic Plan</h2>
-            <h1 style='color:#64748b;'>0€ <small>/μήνα</small></h1>
-            <p>• 5 μηνύματα ανά ημέρα</p>
-            <p>• 1 κόσμος μάθησης</p>
-            <p>• Βασικό AI</p>
-        </div>""", unsafe_allow_html=True)
-        if st.button("Επιλογή Basic"):
-            st.session_state.user["is_auth"] = True
-            st.session_state.user["plan"] = "Free"
-            st.session_state.scene = "lobby"
-            st.rerun()
+class SessionManager:
+    @staticmethod
+    def initialize():
+        if "user" not in st.session_state:
+            st.session_state.user = {
+                "auth": False,
+                "plan": "Free",
+                "name": "Εξερευνητής",
+                "xp": 0,
+                "energy": 100,
+                "daily_limit": 5,
+                "usage": 0
+            }
+        if "scene" not in st.session_state: st.session_state.scene = "login"
+        if "chat_history" not in st.session_state: st.session_state.chat_history = []
+        if "audio_buffer" not in st.session_state: st.session_state.audio_buffer = None
 
-    with col2:
-        st.markdown("""<div class='pricing-card pricing-premium'>
-            <h2 style='color:#ffd700;'>Premium Pro 💎</h2>
-            <h1 style='color:#1e293b;'>9.99€ <small>/μήνα</small></h1>
-            <p>• Απεριόριστα μηνύματα</p>
-            <p>• Όλοι οι Genesis κόσμοι</p>
-            <p>• Αναλυτικά Parent Reports</p>
-        </div>""", unsafe_allow_html=True)
-        if st.button("Αγορά Premium 💳"):
-            st.session_state.user["is_auth"] = True
-            st.session_state.user["plan"] = "Premium"
-            st.session_state.scene = "lobby"
-            st.rerun()
+    @staticmethod
+    def check_quota():
+        if st.session_state.user["plan"] == "Free" and st.session_state.user["usage"] >= st.session_state.user["daily_limit"]:
+            return False
+        return True
 
 # =================================================================
-# 4. LOBBY: THE METASCHOOL HUB
+# MODULE 3: AI ORCHESTRATOR (THE BRAIN)
 # =================================================================
-elif st.session_state.scene == "lobby":
-    # HUD Bar
-    hud1, hud2, hud3, hud4 = st.columns(4)
-    hud1.markdown(f"<div class='hud-item'>👤 {st.session_state.user['name']}</div>", unsafe_allow_html=True)
-    hud2.markdown(f"<div class='hud-item'>✨ XP: {st.session_state.user['xp']}</div>", unsafe_allow_html=True)
-    hud3.markdown(f"<div class='hud-item'>🔋 Energy: {st.session_state.user['energy']}%</div>", unsafe_allow_html=True)
-    hud4.markdown(f"<div class='hud-item'>🏆 Plan: {st.session_state.user['plan']}</div>", unsafe_allow_html=True)
+class AICore:
+    def __init__(self):
+        self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-    st.markdown("<br><h1 style='text-align:center; color:white;'>Πού θα ταξιδέψουμε;</h1>", unsafe_allow_html=True)
-    
-    m1, m2, m3 = st.columns(3)
-    
-    with m1:
-        st.markdown("<div class='genesis-card'><h3>🏝️ Νησί Γρίφων</h3><p>Ελεύθερη πρόσβαση</p></div>", unsafe_allow_html=True)
-        if st.button("Εξερεύνηση ➔", key="island"):
-            st.session_state.quest = "Νησί Γρίφων"
-            st.session_state.scene = "adventure"
-            st.rerun()
+    def generate_response(self, messages):
+        try:
+            response = self.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.8
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Ωχ! Κάτι κούρασε τη σκέψη μου: {str(e)}"
 
-    with m2:
-        is_locked = st.session_state.user["plan"] == "Free"
-        st.markdown(f"<div class='genesis-card' style='opacity:{'0.5' if is_locked else '1'}'><h3>🪐 Πλανήτης Φαντασίας</h3><p>{'🔒 Μόνο Pro' if is_locked else 'Διαθέσιμο'}</p></div>", unsafe_allow_html=True)
-        if st.button("Πτήση ➔", key="planet", disabled=is_locked):
-            st.session_state.quest = "Πλανήτης Φαντασίας"
-            st.session_state.scene = "adventure"
-            st.rerun()
-
-    with m3:
-        st.markdown("<div class='genesis-card'><h3>📊 Parent Portal</h3><p>Αναλύσεις προόδου</p></div>", unsafe_allow_html=True)
-        if st.button("Δες Αναφορές"):
-            st.session_state.scene = "analytics"
-            st.rerun()
+    def text_to_speech(self, text):
+        try:
+            tts = gTTS(text=text, lang='el')
+            fp = io.BytesIO()
+            tts.write_to_fp(fp)
+            fp.seek(0)
+            b64 = base64.b64encode(fp.read()).decode()
+            return f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
+        except: return ""
 
 # =================================================================
-# 5. ADVENTURE ENGINE (AI NARRATIVE & QUOTA CONTROL)
+# MODULE 4: SCENE CONTROLLER (THE JOURNEY)
 # =================================================================
-elif st.session_state.scene == "adventure":
-    # Quota Control for SaaS
-    if st.session_state.user["plan"] == "Free" and st.session_state.user["messages_today"] >= 5:
-        st.error("🛑 Έφτασες το ημερήσιο όριο! Αναβάθμισε σε Premium για ασταμάτητο παιχνίδι.")
-        if st.button("Επιστροφή"): st.session_state.scene = "lobby"; st.rerun()
-    else:
-        st.markdown(f"<h2 style='color:white; text-align:center;'>📍 Αποστολή: {st.session_state.quest}</h2>", unsafe_allow_html=True)
+def main():
+    UI.apply_styles()
+    SessionManager.initialize()
+    ai = AICore()
+
+    # --- SCENE: LOGIN / PRICING ---
+    if st.session_state.scene == "login":
+        st.markdown("<h1 style='text-align:center; color:white; font-family:Comfortaa;'>PedaGO Genesis Pro</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#cbd5e1;'>Επίλεξε το επίπεδο της περιπέτειάς σου</p>", unsafe_allow_html=True)
         
-        if not st.session_state.history:
-            st.session_state.history = [{"role": "system", "content": f"Είσαι ο Φοίβος Genesis. Οδηγείς το παιδί στην αποστολή {st.session_state.quest}. Κάνε μικρές ερωτήσεις, δώσε XP και μίλα με μαγικό τρόπο."}]
-
-        # Render Chat
-        for m in st.session_state.history:
-            if m["role"] != "system":
-                avatar = "🧸" if m["role"] == "assistant" else "🧒"
-                with st.chat_message(m["role"], avatar=avatar):
-                    st.write(m["content"])
-
-        st.markdown("---")
-        c1, c2, c3 = st.columns([1, 2, 1])
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("""<div class='pricing-card'>
+                <h3>🌱 Basic</h3>
+                <h2>0€</h2>
+                <p>5 μηνύματα / ημέρα<br>1 Κόσμος μάθησης</p>
+            </div>""", unsafe_allow_html=True)
+            if st.button("Ξεκίνα Δωρεάν"):
+                st.session_state.user["auth"] = True
+                st.session_state.user["plan"] = "Free"
+                st.session_state.scene = "lobby"
+                st.rerun()
+        
         with c2:
-            input_text = speech_to_text(language='el', start_prompt="🎤 Μίλησε στον Φοίβο", stop_prompt="✅ Ανάλυση", key='genesis_mic')
+            st.markdown("""<div class='pricing-card premium-border'>
+                <h3>💎 Premium Pro</h3>
+                <h2>9.99€</h2>
+                <p>Απεριόριστη μάθηση<br>Όλοι οι Genesis κόσμοι<br>Parent Analytics</p>
+            </div>""", unsafe_allow_html=True)
+            if st.button("Γίνε Pro 💳"):
+                st.session_state.user["auth"] = True
+                st.session_state.user["plan"] = "Premium"
+                st.session_state.scene = "lobby"
+                st.rerun()
 
-        if input_text:
-            if "last_v" not in st.session_state or st.session_state.last_v != input_text:
-                st.session_state.last_v = input_text
-                st.session_state.history.append({"role": "user", "content": input_text})
-                st.session_state.user["messages_today"] += 1
-                st.session_state.user["xp"] += 20
-                
-                with st.chat_message("assistant", avatar="🧸"):
-                    with st.spinner("✨ Επεξεργασία μαγείας..."):
-                        r = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=st.session_state.history)
-                        reply = r.choices[0].message.content
-                        st.write(reply)
-                        st.session_state.history.append({"role": "assistant", "content": reply})
-                        st.session_state.audio_out = play_audio(reply)
-                        st.rerun()
+    # --- SCENE: LOBBY (WORLD HUB) ---
+    elif st.session_state.scene == "lobby":
+        # HUD Status Bar
+        h1, h2, h3, h4 = st.columns(4)
+        h1.markdown(f"<div class='hud-label'>👤 {st.session_state.user['name']}</div>", unsafe_allow_html=True)
+        h2.markdown(f"<div class='hud-label'>✨ XP: {st.session_state.user['xp']}</div>", unsafe_allow_html=True)
+        h3.markdown(f"<div class='hud-label'>🏆 Plan: {st.session_state.user['plan']}</div>", unsafe_allow_html=True)
+        h4.markdown(f"<div class='hud-label'>🔋 {st.session_state.user['energy']}%</div>", unsafe_allow_html=True)
 
-        if st.session_state.audio_out:
-            st.markdown(st.session_state.audio_out, unsafe_allow_html=True)
-            st.session_state.audio_out = None
-
-    if st.button("⬅️ Έξοδος στο Lobby"):
-        st.session_state.scene = "lobby"
-        st.session_state.history = []
-        st.rerun()
-
-# =================================================================
-# 6. ANALYTICS: THE PARENT DASHBOARD
-# =================================================================
-elif st.session_state.scene == "analytics":
-    st.markdown("<h1 style='color:white; text-align:center;'>📊 Parent Analytics Portal</h1>", unsafe_allow_html=True)
-    
-    if st.session_state.user["plan"] == "Free":
-        st.warning("⚠️ Οι αναλυτικές αναφορές είναι διαθέσιμες μόνο σε Premium χρήστες.")
-        if st.button("Αναβάθμιση Τώρα"): st.session_state.scene = "login"; st.rerun()
-    else:
-        st.markdown("<div class='genesis-card'>", unsafe_allow_html=True)
-        st.write(f"### Σύνοψη για τον {st.session_state.user['name']}")
-        col1, col2 = st.columns(2)
-        col1.metric("Συνολικά XP", st.session_state.user["xp"])
-        col2.metric("Streak", f"{st.session_state.user['streak']} Ημέρες")
+        st.markdown("<br><h2 style='text-align:center; color:white;'>Επίλεξε Προορισμό</h2>", unsafe_allow_html=True)
         
-        # Mock Data Chart
-        chart_data = pd.DataFrame({
-            'Ημέρα': ['Δευτ', 'Τρ', 'Τετ', 'Πεμ', 'Παρ', 'Σαβ', 'Κυρ'],
-            'Λέξεις': [50, 80, 45, 120, 90, 150, 200]
-        })
-        fig = px.line(chart_data, x='Ημέρα', y='Λέξεις', title='Λεκτική Ανάπτυξη ανά Ημέρα')
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("<div class='card'><h3>🏝️ Νησί των Γρίφων</h3><p>Μάθε παίζοντας!</p></div>", unsafe_allow_html=True)
+            if st.button("Ταξίδι ➔", key="btn_island"):
+                st.session_state.quest = "Νησί Γρίφων"
+                st.session_state.scene = "adventure"
+                st.rerun()
+        
+        with col2:
+            is_pro = st.session_state.user["plan"] == "Premium"
+            st.markdown(f"<div class='card' style='opacity:{1 if is_pro else 0.5}'><h3>🪐 Πλανήτης Φαντασίας</h3><p>{'Διαθέσιμο' if is_pro else '🔒 Μόνο Pro'}</p></div>", unsafe_allow_html=True)
+            if st.button("Πτήση ➔", key="btn_planet", disabled=not is_pro):
+                st.session_state.quest = "Πλανήτης Φαντασίας"
+                st.session_state.scene = "adventure"
+                st.rerun()
 
-    if st.button("⬅️ Πίσω"): st.session_state.scene = "lobby"; st.rerun()
+    # --- SCENE: ADVENTURE (ACTIVE LEARNING) ---
+    elif st.session_state.scene == "adventure":
+        if not SessionManager.check_quota():
+            st.error("🛑 Το ημερήσιο όριο εξαντλήθηκε! Γίνε Pro για απεριόριστη χρήση.")
+            if st.button("⬅️ Πίσω"): st.session_state.scene = "lobby"; st.rerun()
+        else:
+            st.markdown(f"<h2 style='color:white; text-align:center;'>📍 {st.session_state.quest}</h2>", unsafe_allow_html=True)
+            
+            if not st.session_state.chat_history:
+                st.session_state.chat_history = [{"role": "system", "content": f"Είσαι ο Φοίβος. Δίδαξε στο παιδί για {st.session_state.quest} με μαγικό τρόπο και ερωτήσεις."}]
 
-# Footer
-st.markdown("<p style='text-align:center; color:white; opacity:0.3; margin-top:50px;'>PedaGO Genesis Pro v1.7 | SaaS Platform | 2026</p>", unsafe_allow_html=True)
+            # Chat Display
+            for msg in st.session_state.chat_history:
+                if msg["role"] != "system":
+                    avatar = "🧸" if msg["role"] == "assistant" else "🧒"
+                    with st.chat_message(msg["role"], avatar=avatar):
+                        st.write(msg["content"])
+
+            # Voice Input
+            st.markdown("---")
+            mic_col1, mic_col2, mic_col3 = st.columns([1, 2, 1])
+            with mic_col2:
+                voice = speech_to_text(language='el', start_prompt="🎤 Πες κάτι στον Φοίβο", stop_prompt="✅ Ανάλυση", key='v_mic')
+
+            if voice:
+                if "last_v" not in st.session_state or st.session_state.last_v != voice:
+                    st.session_state.last_v = voice
+                    st.session_state.chat_history.append({"role": "user", "content": voice})
+                    st.session_state.user["usage"] += 1
+                    st.session_state.user["xp"] += 25
+                    
+                    with st.chat_message("assistant", avatar="🧸"):
+                        with st.spinner("✨ Επεξεργασία..."):
+                            reply = ai.generate_response(st.session_state.chat_history)
+                            st.write(reply)
+                            st.session_state.chat_history.append({"role": "assistant", "content": reply})
+                            st.session_state.audio_buffer = ai.text_to_speech(reply)
+                            st.rerun()
+
+            if st.session_state.audio_buffer:
+                st.markdown(st.session_state.audio_buffer, unsafe_allow_html=True)
+                st.session_state.audio_buffer = None
+
+            if st.button("🏃 Επιστροφή στο Lobby"):
+                st.session_state.scene = "lobby"
+                st.session_state.chat_history = []
+                st.rerun()
+
+if __name__ == "__main__":
+    main()
