@@ -7,8 +7,8 @@ import io
 import os
 import time
 
-# 1. Configuration & Global Styling
-st.set_page_config(page_title="PedaGO Ultra Pro v1.5", page_icon="💎", layout="wide")
+# 1. Ρυθμίσεις Σελίδας & Εμφάνισης
+st.set_page_config(page_title="PedaGO Ultra Pro v1.6", page_icon="💎", layout="wide")
 
 st.markdown("""
     <style>
@@ -65,7 +65,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Session State Initialization
+# 2. Αρχικοποίηση Μεταβλητών (Session State)
 if "app_state" not in st.session_state:
     st.session_state.app_state = "launcher"
 if "xp" not in st.session_state:
@@ -77,9 +77,11 @@ if "chat_history" not in st.session_state:
 if "session_goal" not in st.session_state:
     st.session_state.session_goal = ""
 
+# Σύνδεση με Groq
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def speak_text(text):
+    """Μετατροπή κειμένου σε ήχο"""
     try:
         tts = gTTS(text=text, lang='el')
         fp = io.BytesIO()
@@ -88,28 +90,30 @@ def speak_text(text):
         b64 = base64.b64encode(fp.read()).decode()
         audio_html = f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
         st.markdown(audio_html, unsafe_allow_html=True)
-    except: pass
+    except Exception as e:
+        st.error(f"Σφάλμα ήχου: {e}")
 
-# --- SCREEN 1: THE LAUNCHER ---
+# --- ΟΘΟΝΗ 1: ΕΚΠΑΙΔΕΥΤΙΚΟΣ (LAUNCHER) ---
 if st.session_state.app_state == "launcher":
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("""
         <div class='premium-card'>
             <h1 class='main-header'>PedaGO</h1>
-            <p style='color: #64748b; font-size: 1.2rem;'>Η απόλυτη AI εμπειρία μάθησης v1.5</p>
+            <p style='color: #64748b; font-size: 1.2rem;'>Η κορυφαία AI εμπειρία μάθησης v1.6</p>
         </div>
     """, unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        with st.form("teacher_settings"):
-            st.markdown("### 🛠️ Ρυθμίσεις Εκπαιδευτικού")
-            goal = st.text_input("Θέμα συζήτησης:", placeholder="π.χ. Τα ζώα της θάλασσας")
-            difficulty = st.select_slider("Επίπεδο Καθοδήγησης:", options=["Απλό", "Μεσαίο", "Προχωρημένο"])
+        with st.form("settings_form"):
+            st.markdown("### 🛠️ Ρυθμίσεις Μαθήματος")
+            goal = st.text_input("Ποιο είναι το θέμα σήμερα;", placeholder="π.χ. Τα χρώματα του ουράνιου τόξου")
+            difficulty = st.select_slider("Δυσκολία AI:", options=["Εύκολο", "Μέτριο", "Δύσκολο"])
             
             submit = st.form_submit_button("🚀 ΕΝΑΡΞΗ ΜΑΘΗΜΑΤΟΣ")
             if submit:
                 st.session_state.session_goal = goal
-                system_instruction = f"Είσαι ο Φοίβος, AI παιδαγωγός. Θέμα: {goal}. Επίπεδο: {difficulty}. Μίλα απλά, κάνε ερωτήσεις, χρησιμοποίησε emojis και μην δίνεις έτοιμες απαντήσεις."
-                st.session_state.
+                system_msg = f"Είσαι ο Φοίβος, AI παιδαγωγός. Θέμα: {goal}. Δυσκολία: {difficulty}. Μίλα απλά, κάνε ερωτήσεις, χρησιμοποίησε emojis. Μην δίνεις έτοιμες απαντήσεις."
+                st.session_state.chat_history = [{"role": "system", "content": system_msg}]
+                st.session_state.app_state = "active_learning"
