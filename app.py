@@ -117,5 +117,5 @@ if st.session_state.app_state == "launcher":
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        with st.form("teacher_settings
-                     
+        with st.form("teacher_settings)
+                                 
