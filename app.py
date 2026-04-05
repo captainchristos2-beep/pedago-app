@@ -7,81 +7,77 @@ import io
 import os
 import time
 
-# 1. Configuration & Premium Theme
-st.set_page_config(page_title="PedaGO Pro v1.3", page_icon="👑", layout="centered")
+# 1. Configuration & Ultra Premium Theme
+st.set_page_config(page_title="PedaGO Ultra v1.4", page_icon="✨", layout="centered")
 
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Comfortaa:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Outfit:wght@300;600&display=swap');
 
-    /* Background & Smooth Scrolling */
+    html, body, [class*="css"] {
+        font-family: 'Outfit', sans-serif;
+    }
+
     .stApp {
-        background: radial-gradient(circle at top left, #f8fafc, #e2e8f0);
+        background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
     }
 
-    /* Duolingo-style XP Bar */
-    .xp-bar-container {
-        width: 100%;
-        background-color: #e2e8f0;
-        border-radius: 10px;
-        margin: 10px 0;
-    }
-    .xp-bar-fill {
-        height: 12px;
-        background: linear-gradient(90deg, #4ade80, #22c55e);
-        border-radius: 10px;
-        transition: width 0.5s ease-in-out;
-    }
-
-    /* MagicSchool Style Cards */
-    .stChatMessage {
-        border: none !important;
-        background: white !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
-        border-radius: 20px !important;
+    /* Glassmorphism Card για την Αρχική Οθόνη */
+    .teacher-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 30px;
+        padding: 40px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        text-align: center;
     }
 
     .main-title {
         font-family: 'Comfortaa', cursive;
-        background: linear-gradient(90deg, #0284c7, #3b82f6);
+        font-size: 4rem;
+        background: linear-gradient(45deg, #0ea5e9, #6366f1);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 3.5rem;
-        text-align: center;
-        font-weight: 700;
+        margin-bottom: 10px;
     }
 
-    /* Level Badge */
-    .level-badge {
-        background: #fef08a;
-        color: #854d0e;
-        padding: 5px 15px;
+    /* XP & Level Badges */
+    .status-badge {
+        background: white;
+        padding: 8px 20px;
+        border-radius: 50px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        font-weight: 600;
+        color: #0369a1;
+    }
+
+    /* Custom Button */
+    .stButton>button {
+        width: 100%;
         border-radius: 20px;
+        height: 3em;
+        background: linear-gradient(90deg, #0ea5e9, #2563eb);
+        color: white;
+        border: none;
         font-weight: bold;
-        font-size: 0.8rem;
-        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. State Management (Gamification)
+# 2. State Management
+if "app_state" not in st.session_state:
+    st.session_state.app_state = "teacher_gate" # Αρχική κατάσταση
 if "xp" not in st.session_state:
-    st.session_state.xp = 10
-if "level" not in st.session_state:
-    st.session_state.level = 1
+    st.session_state.xp = 0
 if "messages" not in st.session_state:
-    st.session_state.messages = [{
-        "role": "system", 
-        "content": """Είσαι ο Φοίβος v1.3, ο πιο προηγμένος AI Παιδαγωγός. 
-        Συνδυάζεις τη διασκέδαση του Duolingo με την ευφυΐα του MagicSchool.
-        ΚΑΝΟΝΕΣ:
-        1. ΠΟΤΕ μη δίνεις έτοιμη απάντηση. Αν το παιδί ρωτήσει 'τι είναι το 2+2', πες 'Αν έχεις δύο μήλα και σου δώσω άλλα δύο, πόσα θα έχεις στην τσάντα σου;'.
-        2. Μίλα με ενθουσιασμό αλλά και βάθος.
-        3. Επιβράβευσε την προσπάθεια ('Πολύ καλή σκέψη!', 'Είσαι πανέξυπνος!').
-        4. Κράτα τις απαντήσεις μικρές (έως 2 προτάσεις)."""
-    }]
+    st.session_state.messages = []
 
-# 3. AI & Audio Logic
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def speak_text(text):
@@ -95,71 +91,39 @@ def speak_text(text):
         st.markdown(audio_html, unsafe_allow_html=True)
     except: pass
 
-# 4. Sidebar (Dashboard)
-with st.sidebar:
-    st.markdown(f"### 🏆 Επίπεδο {st.session_state.level}")
-    xp_percentage = (st.session_state.xp % 100)
-    st.markdown(f"**XP: {st.session_state.xp}**")
-    st.markdown(f"""<div class='xp-bar-container'><div class='xp-bar-fill' style='width: {xp_percentage}%'></div></div>""", unsafe_allow_html=True)
-    st.write("---")
-    st.success("✨ Magic Mode: Ενεργό")
-    if st.button("🔄 Επαναφορά"):
-        st.session_state.messages = [st.session_state.messages[0]]
-        st.session_state.xp = 10
-        st.rerun()
-
-# 5. Main UI
-st.markdown("<h1 class='main-title'>PedaGO Pro</h1>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:center'><span class='level-badge'>v1.3 ADVANCED AI</span></div>", unsafe_allow_html=True)
-
-# Chat Display
-for message in st.session_state.messages:
-    if message["role"] != "system":
-        with st.chat_message(message["role"], avatar="🧸" if message["role"]=="assistant" else "🧒"):
-            st.write(message["content"])
-
-# 6. Interaction Zone
-st.markdown("<br>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1, 5, 1])
-with col2:
-    st.markdown("<div style='background: white; border-radius: 50px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);'>", unsafe_allow_html=True)
-    text = speech_to_text(language='el', start_prompt="🌟 Μίλησε στον Φοίβο", stop_prompt="✅ Τέλος", key='pro_mic')
-    st.markdown("</div>", unsafe_allow_html=True)
-
-if text:
-    if "last_processed" not in st.session_state or st.session_state.last_processed != text:
-        st.session_state.last_processed = text
-        st.session_state.messages.append({"role": "user", "content": text})
+# --- SCREEN 1: TEACHER GATE ---
+if st.session_state.app_state == "teacher_gate":
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    with st.container():
+        st.markdown("""
+            <div class='teacher-card'>
+                <h1 class='main-title'>PedaGO</h1>
+                <p style='color: #64748b; font-size: 1.2rem;'>Καλωσήρθατε στην ψηφιακή γωνιά μάθησης</p>
+            </div>
+        """, unsafe_allow_html=True)
         
-        # XP Gain logic
-        st.session_state.xp += 15
-        if st.session_state.xp % 100 == 0: st.session_state.level += 1
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander("🔐 Ρυθμίσεις Εκπαιδευτικού", expanded=True):
+            goal = st.text_input("Στόχος Συζήτησης (π.χ. Τα ζώα της ζούγκλας)", "Γενική Μάθηση")
+            tone = st.select_slider("Τόνος Φοίβου", options=["Πολύ Απλός", "Ενθουσιώδης", "Προκλητικός"])
+            
+            if st.button("✨ Έναρξη Μαγείας"):
+                # Δημιουργία του System Prompt βάσει των ρυθμίσεων
+                st.session_state.messages = [{
+                    "role": "system", 
+                    "content": f"""Είσαι ο Φοίβος, ο AI βοηθός. Στόχος: {goal}. 
+                    Τόνος: {tone}. Μίλα απλά, κάνε 1 ερώτηση, χρησιμοποίησε emojis. 
+                    Μην δίνεις έτοιμες απαντήσεις (τύπου MagicSchool)."""
+                }]
+                st.session_state.app_state = "interaction"
+                st.rerun()
 
-        with st.chat_message("assistant", avatar="🧸"):
-            with st.spinner("🪄 Ο Φοίβος κάνει μαγικά..."):
-                completion = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=st.session_state.messages,
-                    temperature=0.8
-                )
-                ai_reply = completion.choices[0].message.content
-                st.write(ai_reply)
-        
-        st.session_state.messages.append({"role": "assistant", "content": ai_reply})
-        speak_text(ai_reply)
-        st.rerun()
-
-# 7. Professional Footer
-st.markdown(
-    """
-    <div style='margin-top: 100px; border-top: 1px solid #e2e8f0; padding-top: 20px;'>
-        <table style='width:100%; border:none;'>
-            <tr>
-                <td style='color: #94a3b8; font-size: 0.8rem;'>© 2026 PedaGO International</td>
-                <td style='text-align:right; color: #94a3b8; font-size: 0.8rem;'>Made with ❤️ for PedaGO | Version 1.3</td>
-            </tr>
-        </table>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+# --- SCREEN 2: INTERACTION MODE ---
+else:
+    # Sidebar Dashboard
+    with st.sidebar:
+        st.markdown("<h2 style='text-align:center;'>📊 Πρόοδος</h2>", unsafe_allow_html=True)
+        st.progress(min(st.session_state.xp / 100, 1.0))
+        st.write(f"**XP Points:** {st.session_state.xp}")
+        st.write("---")
+        if st.button("🔒 Έξοδος & Αναφορά
