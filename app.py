@@ -6,232 +6,290 @@ import base64
 import io
 import os
 import time
-import random
+import datetime
+import json
 
-# --- 1. CONFIGURATION & THEME ---
+# ==========================================
+# 1. GLOBAL CONFIGURATION & CONSTANTS
+# ==========================================
+VERSION = "1.2.5"
+APP_NAME = "PedaGO AI - Φοίβος"
+PRIMARY_COLOR = "#0ea5e9"
+SECONDARY_COLOR = "#6366f1"
+
 st.set_page_config(
-    page_title="PedaGO Ultra Pro v2.0",
-    page_icon="🚀",
+    page_title=f"{APP_NAME} v{VERSION}",
+    page_icon="🧸",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Advanced CSS for High-End UX
-st.markdown("""
+# ==========================================
+# 2. PREMIUM CSS STYLING (THEming)
+# ==========================================
+st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Outfit:wght@300;600;800&display=swap');
-    
-    :root {
-        --primary: #0ea5e9;
-        --secondary: #6366f1;
-        --accent: #f59e0b;
-        --bg: #f8fafc;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Outfit:wght@300;400;600;800&display=swap');
 
-    html, body, [class*="css"] { font-family: 'Outfit', sans-serif; }
-    .stApp { background: var(--bg); }
+    /* Global Styles */
+    html, body, [class*="css"] {{
+        font-family: 'Outfit', sans-serif;
+        background-color: #f8fafc;
+    }}
 
-    /* Custom Containers */
-    .main-card {
-        background: white;
-        border-radius: 35px;
-        padding: 3rem;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-        border: 1px solid #f1f5f9;
-        text-align: center;
-        margin-top: 2rem;
-    }
+    .stApp {{
+        background: radial-gradient(circle at top right, #f0f9ff, #ffffff);
+    }}
 
-    .hero-text {
+    /* Typography */
+    .main-title {{
         font-family: 'Comfortaa', cursive;
-        font-size: 4.5rem;
+        font-size: 3.8rem;
         font-weight: 800;
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        background: linear-gradient(135deg, {PRIMARY_COLOR}, {SECONDARY_COLOR});
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0;
-    }
+        text-align: center;
+        margin-bottom: 0px;
+    }}
 
-    /* Achievement & XP System Styling */
-    .badge-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 15px 0; }
-    .xp-pill {
-        background: #f0f9ff;
-        color: #0369a1;
-        padding: 5px 20px;
-        border-radius: 50px;
-        font-weight: 700;
-        border: 1px solid #bae6fd;
-    }
+    /* Custom Chat Bubbles */
+    .stChatMessage {{
+        border-radius: 20px !important;
+        padding: 1.5rem !important;
+        margin-bottom: 1rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    }}
 
-    /* Chat Styling */
-    .stChatMessage {
-        border-radius: 25px !important;
-        border: none !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
-        transition: transform 0.2s;
-    }
-    .stChatMessage:hover { transform: scale(1.01); }
+    /* Teacher Control Panel */
+    .teacher-panel {{
+        background: white;
+        border-radius: 25px;
+        padding: 2rem;
+        border: 2px solid #e2e8f0;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }}
 
-    /* Buttons */
-    .stButton>button {
-        border-radius: 20px;
-        background: linear-gradient(90deg, var(--primary), var(--secondary));
+    /* Metrics & Progress */
+    .metric-card {{
+        background: white;
+        padding: 1rem;
+        border-radius: 15px;
+        border-left: 5px solid {PRIMARY_COLOR};
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }}
+
+    /* Buttons Animation */
+    .stButton>button {{
+        width: 100%;
+        border-radius: 12px;
+        height: 3.5rem;
+        background: linear-gradient(90deg, {PRIMARY_COLOR}, {SECONDARY_COLOR});
         color: white;
+        font-weight: 700;
         border: none;
-        padding: 0.6rem 2rem;
-        font-weight: 600;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .stButton>button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(14, 165, 233, 0.4); }
+    }}
+
+    .stButton>button:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3);
+    }}
+
+    /* Audio Component Hidden */
+    #audio-container {{ display: none; }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. CORE LOGIC & UTILITIES ---
-if "app_state" not in st.session_state: st.session_state.app_state = "gate"
-if "xp" not in st.session_state: st.session_state.xp = 0
-if "lvl" not in st.session_state: st.session_state.lvl = 1
-if "badges" not in st.session_state: st.session_state.badges = []
-if "history" not in st.session_state: st.session_state.history = []
-if "goal" not in st.session_state: st.session_state.goal = ""
+# ==========================================
+# 3. SESSION STATE MANAGEMENT
+# ==========================================
+def init_session():
+    if "app_state" not in st.session_state: st.session_state.app_state = "setup"
+    if "messages" not in st.session_state: st.session_state.messages = []
+    if "xp" not in st.session_state: st.session_state.xp = 0
+    if "session_id" not in st.session_state: st.session_state.session_id = f"SES-{int(time.time())}"
+    if "teacher_logs" not in st.session_state: st.session_state.teacher_logs = []
+    if "student_name" not in st.session_state: st.session_state.student_name = "Μαθητής"
+    if "current_goal" not in st.session_state: st.session_state.current_goal = ""
+    if "audio_queue" not in st.session_state: st.session_state.audio_queue = None
 
+init_session()
+
+# ==========================================
+# 4. CORE UTILITIES (AI & AUDIO)
+# ==========================================
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-def play_audio(text):
+def generate_audio(text):
+    """Μετατροπή κειμένου σε ομιλία με gTTS"""
     try:
         tts = gTTS(text=text, lang='el')
-        b = io.BytesIO()
-        tts.write_to_fp(b)
-        b.seek(0)
-        encoded = base64.b64encode(b.read()).decode()
-        html = f'<audio autoplay="true"><source src="data:audio/mp3;base64,{encoded}" type="audio/mp3"></audio>'
-        st.markdown(html, unsafe_allow_html=True)
-    except Exception: pass
+        fp = io.BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        b64 = base64.b64encode(fp.read()).decode()
+        return f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
+    except Exception as e:
+        return f"<!-- Audio Error: {e} -->"
 
-def check_achievements():
-    if st.session_state.xp >= 100 and "🌟 Αστέρι" not in st.session_state.badges:
-        st.session_state.badges.append("🌟 Αστέρι")
-    if st.session_state.xp >= 300 and "🧙 Μάγος" not in st.session_state.badges:
-        st.session_state.badges.append("🧙 Μάγος")
-    if len(st.session_state.history) > 10 and "🗣️ Πολυλογάς" not in st.session_state.badges:
-        st.session_state.badges.append("🗣️ Πολυλογάς")
+def log_interaction(role, content):
+    """Καταγραφή για τον εκπαιδευτικό"""
+    timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+    st.session_state.teacher_logs.append({
+        "time": timestamp,
+        "role": role,
+        "text": content
+    })
 
-# --- 3. UI SCREENS ---
-
-# SCREEN 1: TEACHER GATE
-if st.session_state.app_state == "gate":
-    st.markdown("<div class='main-card'>", unsafe_allow_html=True)
-    st.markdown("<h1 class='hero-text'>PedaGO</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size:1.3rem; color:#64748b;'>Ολοκληρωμένο Σύστημα Παιδαγωγικής Αλληλεπίδρασης</p>", unsafe_allow_html=True)
+# ==========================================
+# 5. SIDEBAR: DASHBOARD & ANALYTICS
+# ==========================================
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/4343/4343031.png", width=100)
+    st.title("🛡️ Teacher Control")
+    st.info(f"Session: {st.session_state.session_id}")
     
-    st.markdown("<br><div style='max-width:500px; margin:auto;'>", unsafe_allow_html=True)
-    with st.form("init_form"):
-        st.subheader("⚙️ Ρυθμίσεις Εκπαιδευτικού")
-        topic = st.text_input("Θέμα Δραστηριότητας:", placeholder="π.χ. Προστασία του περιβάλλοντος")
-        persona = st.selectbox("Προσωπικότητα Φοίβου:", ["Ενθουσιώδης", "Ήρεμος", "Εξερευνητής"])
-        mode = st.radio("Στόχος:", ["Ελεύθερη Συζήτηση", "Επίλυση Προβλήματος", "Εκμάθηση Λεξιλογίου"])
-        
-        start = st.form_submit_button("🚀 ΕΝΑΡΞΗ ΣΥΝΕΔΡΙΑΣ")
-        if start:
-            st.session_state.goal = topic
-            sys_prompt = f"Είσαι ο Φοίβος, {persona} AI βοηθός. Στόχος: {topic} μέσω {mode}. Μίλα απλά σε παιδιά, κάνε 1 ερώτηση τη φορά, χρησιμοποίησε emojis. Ποτέ μην δίνεις έτοιμη απάντηση."
-            st.session_state.history = [{"role": "system", "content": sys_prompt}]
-            st.session_state.app_state = "active"
-            st.rerun()
-    st.markdown("</div></div>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.subheader("📊 Πρόοδος Μαθητή")
+    st.write(f"Όνομα: **{st.session_state.student_name}**")
+    st.metric("Συνολικά XP", st.session_state.xp)
+    
+    xp_level = (st.session_state.xp // 100) + 1
+    st.write(f"Επίπεδο: {xp_level}")
+    st.progress(min((st.session_state.xp % 100) / 100, 1.0))
 
-# SCREEN 2: ACTIVE INTERACTION
-elif st.session_state.app_state == "active":
-    # Sidebar Dashboard
-    with st.sidebar:
-        st.title("🏆 Πρόοδος")
-        st.metric("Επίπεδο", st.session_state.lvl)
-        st.write(f"XP: {st.session_state.xp}")
-        st.progress(min((st.session_state.xp % 100) / 100, 1.0))
-        st.markdown("---")
-        st.subheader("🏅 Μετάλλια")
-        for b in st.session_state.badges:
-            st.markdown(f"<span class='xp-pill'>{b}</span>", unsafe_allow_html=True)
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        if st.button("🔒 Κλείσιμο Μαθήματος"):
-            st.session_state.app_state = "analytics"
-            st.rerun()
+    st.markdown("---")
+    if st.button("🔄 Επαναφορά Εφαρμογής"):
+        for key in st.session_state.keys():
+            del st.session_state[key]
+        st.rerun()
+    
+    with st.expander("📝 Logs Συζήτησης"):
+        for log in st.session_state.teacher_logs:
+            st.caption(f"[{log['time']}] {log['role']}: {log['text'][:30]}...")
 
-    # Main Chat Area
-    c1, c2, c3 = st.columns([1, 4, 1])
-    with c2:
-        st.markdown("<h2 style='text-align:center; font-family:Comfortaa;'>🧸 Φοίβος</h2>", unsafe_allow_html=True)
-        
-        # Chat History Rendering
-        for m in st.session_state.history:
+# ==========================================
+# 6. UI SCREENS (LOGIC)
+# ==========================================
+
+# --- SCREEN A: SETUP / TEACHER GATE ---
+if st.session_state.app_state == "setup":
+    st.markdown("<h1 class='main-title'>PedaGO setup</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>Ρυθμίστε τη συνεδρία προτού ξεκινήσει το παιδί.</p>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        with st.form("teacher_form"):
+            name = st.text_input("Όνομα Μαθητή:", value="Μικρός Εξερευνητής")
+            age = st.select_slider("Ηλικία Παιδιού:", options=[3, 4, 5, 6, 7])
+            topic = st.text_input("Θέμα Συζήτησης (π.χ. Τα ζώα της φάρμας):", "Γενική Μάθηση")
+            style = st.selectbox("Ύφος Φοίβου:", ["Παιχνιδιάρικο", "Εκπαιδευτικό", "Καθησυχαστικό"])
+            
+            if st.form_submit_button("✨ Έναρξη Αλληλεπίδρασης"):
+                st.session_state.student_name = name
+                st.session_state.current_goal = topic
+                
+                # System Prompt Construction
+                sys_prompt = f"""
+                Είσαι ο Φοίβος, ένας AI βοηθός νηπιαγωγού. 
+                Μιλάς σε ένα παιδί {age} ετών που το λένε {name}.
+                Θέμα συνεδρίας: {topic}. Ύφος: {style}.
+                Κανόνες: 
+                1. Μίλα απλά ελληνικά, χωρίς δύσκολες λέξεις.
+                2. Κάθε απάντηση έως 2 σύντομες προτάσεις.
+                3. Πάντα να κάνεις ΜΙΑ ερώτηση στο τέλος.
+                4. Χρησιμοποίησε emojis ✨, 🎈, 🧸.
+                5. Μην δίνεις έτοιμες απαντήσεις, κάνε το παιδί να σκεφτεί.
+                """
+                st.session_state.messages = [{"role": "system", "content": sys_prompt}]
+                st.session_state.app_state = "chat"
+                log_interaction("SYSTEM", f"Session started for {name}, Topic: {topic}")
+                st.rerun()
+
+# --- SCREEN B: ACTIVE CHAT ---
+elif st.session_state.app_state == "chat":
+    st.markdown(f"<h1 class='main-title'>🧸 Γεια σου, {st.session_state.student_name}!</h1>", unsafe_allow_html=True)
+    
+    # Message Container
+    chat_container = st.container()
+    with chat_container:
+        for m in st.session_state.messages:
             if m["role"] != "system":
                 avatar = "🧸" if m["role"] == "assistant" else "🧒"
                 with st.chat_message(m["role"], avatar=avatar):
                     st.write(m["content"])
 
-        # Interaction Zone
-        st.markdown("<br><div style='position: sticky; bottom: 20px; background:white; padding:20px; border-radius:30px; box-shadow:0 -10px 30px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
-        cols = st.columns([4, 1])
-        with cols[0]:
-            voice_data = speech_to_text(language='el', start_prompt="🎤 Πες κάτι στον Φοίβο...", stop_prompt="✅ Τέλος", key='voice_v2')
-        with cols[1]:
-            if st.button("🔄 Clear"):
-                st.session_state.history = [st.session_state.history[0]]
-                st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Bottom Interaction Area
+    st.markdown("---")
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        st.markdown("<p style='text-align:center;'>Πάτα το μικρόφωνο και πες κάτι!</p>", unsafe_allow_html=True)
+        # Speech to Text Component
+        input_text = speech_to_text(
+            language='el', 
+            start_prompt="🎤 Ξεκίνα να μιλάς", 
+            stop_prompt="✅ Τέλος", 
+            key='speech_v12'
+        )
 
-        if voice_data:
-            if "last_v" not in st.session_state or st.session_state.last_v != voice_data:
-                st.session_state.last_v = voice_data
-                st.session_state.history.append({"role": "user", "content": voice_data})
-                
-                # Gamification update
-                st.session_state.xp += 20
-                if st.session_state.xp // 100 > st.session_state.lvl - 1:
-                    st.session_state.lvl += 1
-                check_achievements()
-
-                with st.chat_message("assistant", avatar="🧸"):
-                    with st.spinner("💭 Ο Φοίβος σκέφτεται..."):
-                        resp = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=st.session_state.history)
-                        reply = resp.choices[0].message.content
-                        st.write(reply)
-                
-                st.session_state.history.append({"role": "assistant", "content": reply})
-                play_audio(reply)
-                st.rerun()
-
-# SCREEN 3: ANALYTICS & REPORT
-elif st.session_state.app_state == "analytics":
-    st.markdown("<div class='main-card'>", unsafe_allow_html=True)
-    st.title("📊 Παιδαγωγική Αναφορά")
-    st.markdown(f"**Συνεδρία για:** {st.session_state.goal}")
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Συνολικά XP", st.session_state.xp)
-    col2.metric("Επίπεδο που έφτασε", st.session_state.lvl)
-    col3.metric("Ανταλλαγές μηνυμάτων", len(st.session_state.history) - 1)
-    
-    st.markdown("### 📝 Ιστορικό Δραστηριότητας")
-    for msg in st.session_state.history:
-        if msg["role"] != "system":
-            color = "#0ea5e9" if msg["role"] == "user" else "#6366f1"
-            st.markdown(f"<p style='color:{color}'><b>{msg['role'].upper()}:</b> {msg['content']}</p>", unsafe_allow_html=True)
+    if input_text:
+        # Check if the text is new to avoid loops
+        if "last_processed" not in st.session_state or st.session_state.last_processed != input_text:
+            st.session_state.last_processed = input_text
             
-    if st.button("🏠 Επιστροφή στην Αρχική"):
-        st.session_state.app_state = "gate"
-        st.session_state.xp = 0
-        st.session_state.lvl = 1
-        st.session_state.badges = []
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+            # User Message
+            st.session_state.messages.append({"role": "user", "content": input_text})
+            log_interaction("USER", input_text)
+            st.session_state.xp += 15 # Reward for speaking
+            
+            # AI Response Logic
+            with st.spinner("Ο Φοίβος σκέφτεται..."):
+                try:
+                    chat_completion = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=st.session_state.messages,
+                        temperature=0.7,
+                        max_tokens=150
+                    )
+                    ai_reply = chat_completion.choices[0].message.content
+                    
+                    # Update State
+                    st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+                    log_interaction("ASSISTANT", ai_reply)
+                    
+                    # Trigger Audio and Refresh
+                    st.session_state.audio_queue = generate_audio(ai_reply)
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error("Ωχ! Κάτι κούρασε τον Φοίβο. Δοκίμασε ξανά!")
+                    log_interaction("ERROR", str(e))
 
-# --- 4. FOOTER ---
-st.markdown(
-    """
-    <div style='text-align: center; padding: 30px; color: #94a3b8; font-size: 0.85rem;'>
-        <b>PedaGO Ultra Pro v2.0</b> | 2026 Edition | Advanced Pedagogy AI<br>
-        Designed for Excellence | Version 2.0.1
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+    # Hidden Audio Player (Injects audio if queued)
+    if st.session_state.audio_queue:
+        st.markdown(st.session_state.audio_queue, unsafe_allow_html=True)
+        st.session_state.audio_queue = None
+
+# ==========================================
+# 7. FOOTER & VERSIONING
+# ==========================================
+st.markdown("<br><br>", unsafe_allow_html=True)
+footer_cols = st.columns([1, 2, 1])
+with footer_cols[1]:
+    st.markdown(f"""
+        <div style='text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; color: #94a3b8;'>
+            <p>Made with ❤️ for PedaGO | <b>Version {VERSION}</b></p>
+            <p style='font-size: 0.7rem;'>© 2026 Educational Excellence Platform</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+# ==========================================
+# 8. TEACHER'S SECRET TOOLS (HIDDEN)
+# ==========================================
+# This section can be expanded up to 500 lines by adding:
+# - Data export to CSV
+# - Sentiment analysis graph
+# - Session timers
+# - Achievement popups
