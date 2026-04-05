@@ -5,54 +5,58 @@ from gtts import gTTS
 import base64
 import io
 import os
-import random
+import time
 
-# 1. Ρύθμιση σελίδας
-st.set_page_config(page_title="PedaGO AI - Φοίβος", page_icon="🚀", layout="centered")
+# 1. Βασική Ρύθμιση
+st.set_page_config(page_title="PedaGO AI v1.2", page_icon="🧸", layout="centered")
 
-# 2. Advanced CSS για "Premium" Αίσθηση
+# 2. Επαγγελματικό UI με Custom CSS (Premium Look)
 st.markdown("""
     <style>
-    /* Κλίση φόντου που θυμίζει ουρανό */
-    .stApp { 
-        background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%); 
+    @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;500;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Comfortaa', cursive;
     }
-    
-    /* Στυλ για τις κάρτες των μηνυμάτων */
+
+    .stApp {
+        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    }
+
+    /* Φούσκες μηνυμάτων τύπου iOS/WhatsApp */
     .stChatMessage {
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        border-radius: 25px !important;
-        border: 1px solid #e1e1e1;
+        border-radius: 20px !important;
+        margin-bottom: 15px !important;
+        padding: 15px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
     }
 
-    /* Τίτλος με εφέ παιχνιδιού */
-    .main-title {
+    /* Ο τίτλος της εφαρμογής */
+    .main-header {
+        font-size: 3.5rem;
+        font-weight: 700;
         color: #0284c7;
-        font-family: 'Comic Sans MS', cursive, sans-serif;
-        font-size: 3rem;
         text-align: center;
-        margin-bottom: 0;
-        animation: pulse 2s infinite;
+        margin-bottom: 5px;
+        letter-spacing: -1px;
     }
 
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-        100% { transform: scale(1); }
+    /* Footer στυλ */
+    .footer-text {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin-top: 50px;
+        padding: 20px;
     }
 
-    /* Κουμπί μικροφώνου */
-    div.stButton > button {
-        background-color: #0284c7;
-        color: white;
-        border-radius: 50px;
-        padding: 10px 25px;
-        border: none;
-        transition: all 0.3s;
-    }
-    div.stButton > button:hover {
-        background-color: #0369a1;
-        transform: translateY(-2px);
+    /* Animation για το μικρόφωνο */
+    .mic-section {
+        background: white;
+        border-radius: 30px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border: 2px solid #e0f2fe;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -61,86 +65,81 @@ st.markdown("""
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def speak_text(text):
-    """Μετατρέπει το κείμενο σε ήχο με βελτιωμένο autoplay"""
-    try:
-        tts = gTTS(text=text, lang='el')
-        fp = io.BytesIO()
-        tts.write_to_fp(fp)
-        fp.seek(0)
-        b64 = base64.b64encode(fp.read()).decode()
-        audio_html = f"""
-            <audio autoplay="true">
-                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-            </audio>
-        """
-        st.markdown(audio_html, unsafe_allow_html=True)
-    except Exception:
-        pass
+    """Εξελιγμένη μετατροπή κειμένου σε ήχο"""
+    tts = gTTS(text=text, lang='el')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    b64 = base64.b64encode(fp.read()).decode()
+    audio_html = f"""
+        <audio autoplay="true">
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+        </audio>
+    """
+    st.markdown(audio_html, unsafe_allow_html=True)
 
-# 4. Διαχείριση Μνήμης & Προσωπικότητας
+# 4. Μνήμη & Σύστημα (v1.2 Logic)
 if "messages" not in st.session_state:
     st.session_state.messages = [{
         "role": "system", 
-        "content": """Είσαι ο Φοίβος, ο καλύτερος φίλος των παιδιών στο νηπιαγωγείο.
-        - Το ύφος σου είναι χαρούμενο, καθησυχαστικό και γεμάτο φαντασία.
-        - Χρησιμοποίησε λέξεις όπως 'φανταστικό', 'υπέροχα', 'πάμε να δούμε'.
-        - Κράτα τις απαντήσεις κάτω από 25 λέξεις.
-        - Κάθε απάντηση ΠΡΕΠΕΙ να τελειώνει με μια ερώτηση που προκαλεί το παιδί να περιγράψει κάτι (π.χ. 'Τι χρώμα έχει ο δικός σου δράκος;').
-        - Αν το παιδί σου πει το όνομά του, να το χρησιμοποιείς συχνά."""
+        "content": """Είσαι ο Φοίβος, ο πιο εξελιγμένος AI βοηθός νηπιαγωγού στον κόσμο. 
+        - Το ύφος σου είναι εξαιρετικά στοργικό, ενθουσιώδες και παιδαγωγικό.
+        - Μίλα απλά αλλά ενθάρρυνε την κριτική σκέψη.
+        - Χρησιμοποίησε emojis ✨, 🌈, 🍎, 🎨.
+        - Κάθε απάντηση πρέπει να είναι έως 2 προτάσεις και να τελειώνει με μια ερώτηση ανοιχτού τύπου."""
     }]
 
-# 5. UI - Header & Μασκότ
-st.markdown("<h1 class='main-title'>🧸 Φοίβος</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #64748b;'>Ο AI βοηθός σου για παιχνίδι και μάθηση!</p>", unsafe_allow_html=True)
+# 5. Κύριο Περιεχόμενο
+st.markdown("<h1 class='main-header'>🧸 Φοίβος</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #0ea5e9; font-weight: 500;'>Η έξυπνη παρέα σου για μάθηση!</p>", unsafe_allow_html=True)
 
-# Sidebar με ρυθμίσεις για τον δάσκαλο
+# Sidebar
 with st.sidebar:
-    st.title("⚙️ Ρυθμίσεις")
-    difficulty = st.select_slider("Επίπεδο Λεξιλογίου", options=["Απλό", "Μεσαίο", "Πλούσιο"])
-    st.write("---")
+    st.image("https://cdn-icons-png.flaticon.com/512/3048/3048122.png", width=100) # Εικονίδιο αν δεν έχεις το foivos_robot
+    st.title("PedaGO Dashboard")
+    st.markdown("---")
     if st.button("🗑️ Νέα Συζήτηση"):
         st.session_state.messages = [st.session_state.messages[0]]
         st.rerun()
-    st.info("Tip: Ο Φοίβος λειτουργεί καλύτερα όταν το παιδί μιλάει καθαρά κοντά στο μικρόφωνο.")
+    st.caption("Version: 1.2 Premium")
 
-# Εμφάνιση μηνυμάτων
+# Display Messages
 for message in st.session_state.messages:
     if message["role"] != "system":
         avatar = "🚀" if message["role"] == "user" else "🧸"
         with st.chat_message(message["role"], avatar=avatar):
             st.write(message["content"])
 
-# 6. Κεντρικό Σημείο Αλληλεπίδρασης
-st.write("")
-col1, col2, col3 = st.columns([1, 3, 1])
-
-with col2:
-    # Εδώ είναι η "καρδιά" της εφαρμογής
-    text = speech_to_text(
-        language='el', 
-        start_prompt="🎤 Πάτα για να μιλήσεις", 
-        stop_prompt="🛑 Σταμάτα", 
-        key='foivos_ultra_mic'
-    )
+# 6. Interaction Zone (Το Μικρόφωνο)
+st.markdown("<br>", unsafe_allow_html=True)
+with st.container():
+    col1, col2, col3 = st.columns([1, 4, 1])
+    with col2:
+        st.markdown("<div class='mic-section'>", unsafe_allow_html=True)
+        text = speech_to_text(
+            language='el', 
+            start_prompt="🎤 Πάτα & Μίλησε στον Φοίβο", 
+            stop_prompt="🛑 Σταμάτα", 
+            key='foivos_v1_2'
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
 if text:
     if "last_processed" not in st.session_state or st.session_state.last_processed != text:
         st.session_state.last_processed = text
         st.session_state.messages.append({"role": "user", "content": text})
         
-        # Εμφάνιση "Φοίβος σκέφτεται" με εφέ
-        with st.status("Ο Φοίβος ακούει προσεκτικά...", expanded=False) as status:
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=st.session_state.messages,
-                temperature=0.8, # Λίγο πιο δημιουργικό
-            )
-            ai_reply = completion.choices[0].message.content
-            status.update(label="Ο Φοίβος βρήκε τι θα πει!", state="complete", expanded=False)
-
+        with st.chat_message("assistant", avatar="🧸"):
+            message_placeholder = st.empty()
+            with st.spinner("Ο Φοίβος ετοιμάζει την απάντηση..."):
+                completion = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=st.session_state.messages,
+                    temperature=0.8
+                )
+                ai_reply = completion.choices[0].message.content
+                message_placeholder.write(ai_reply)
+        
         st.session_state.messages.append({"role": "assistant", "content": ai_reply})
         speak_text(ai_reply)
-        st.rerun()
-
-# 7. Footer
-st.markdown("<br><br><p style='text-align: center; color: #94a3b8; font-size: 0.8rem;'>Made with ❤️ for PedaGO</p>", unsafe_allow_html=True)
+        time.sleep(1) # Μικρή καθυστέρηση
