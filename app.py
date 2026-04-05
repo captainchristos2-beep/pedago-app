@@ -6,9 +6,8 @@ import base64
 import io
 import os
 import time
-import json
 
-# 1. Configuration & Global Styling (The "Apple" of Edu-Apps)
+# 1. Configuration & Global Styling
 st.set_page_config(page_title="PedaGO Ultra Pro v1.5", page_icon="💎", layout="wide")
 
 st.markdown("""
@@ -23,11 +22,10 @@ st.markdown("""
         background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f5f9 100%);
     }
 
-    /* Glassmorphism Containers */
     .premium-card {
         background: rgba(255, 255, 255, 0.9);
         border-radius: 30px;
-        padding: 3rem;
+        padding: 2rem;
         border: 1px solid #e2e8f0;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
         text-align: center;
@@ -37,48 +35,37 @@ st.markdown("""
 
     .main-header {
         font-family: 'Comfortaa', cursive;
-        font-size: 4.5rem;
+        font-size: 4rem;
         font-weight: 700;
         background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
     }
 
-    /* XP & Achievement Badges */
     .achievement-badge {
         display: inline-block;
-        padding: 10px 20px;
+        padding: 8px 15px;
         background: #fef3c7;
         color: #92400e;
-        border-radius: 15px;
+        border-radius: 12px;
         font-weight: 800;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         margin: 5px;
-        border: 2px solid #fcd34d;
+        border: 1.5px solid #fcd34d;
     }
 
-    /* Custom Chat Bubbles */
-    .stChatMessage {
-        border-radius: 25px !important;
-        border: none !important;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.02) !important;
-    }
-
-    /* Mic Button Pulse */
     .mic-wrap {
         display: flex;
         justify-content: center;
-        padding: 20px;
+        padding: 15px;
         background: white;
         border-radius: 100px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        border: 1px solid #f1f5f9;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Advanced Session State (The "Brain" of v1.5)
+# 2. Session State Initialization
 if "app_state" not in st.session_state:
     st.session_state.app_state = "launcher"
 if "xp" not in st.session_state:
@@ -103,19 +90,26 @@ def speak_text(text):
         st.markdown(audio_html, unsafe_allow_html=True)
     except: pass
 
-# --- SCREEN 1: THE PREMIUM LAUNCHER (Teacher Mode) ---
+# --- SCREEN 1: THE LAUNCHER ---
 if st.session_state.app_state == "launcher":
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("""
         <div class='premium-card'>
             <h1 class='main-header'>PedaGO</h1>
-            <p style='color: #64748b; font-size: 1.5rem; font-weight: 300;'>Η απόλυτη AI εμπειρία μάθησης v1.5</p>
+            <p style='color: #64748b; font-size: 1.2rem;'>Η απόλυτη AI εμπειρία μάθησης v1.5</p>
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<br>", unsafe_allow_html=True)
-    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        with st.form("teacher_settings)
-                                 
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.form("teacher_settings"):
+            st.markdown("### 🛠️ Ρυθμίσεις Εκπαιδευτικού")
+            goal = st.text_input("Θέμα συζήτησης:", placeholder="π.χ. Τα ζώα της θάλασσας")
+            difficulty = st.select_slider("Επίπεδο Καθοδήγησης:", options=["Απλό", "Μεσαίο", "Προχωρημένο"])
+            
+            submit = st.form_submit_button("🚀 ΕΝΑΡΞΗ ΜΑΘΗΜΑΤΟΣ")
+            if submit:
+                st.session_state.session_goal = goal
+                system_instruction = f"Είσαι ο Φοίβος, AI παιδαγωγός. Θέμα: {goal}. Επίπεδο: {difficulty}. Μίλα απλά, κάνε ερωτήσεις, χρησιμοποίησε emojis και μην δίνεις έτοιμες απαντήσεις."
+                st.session_state.
