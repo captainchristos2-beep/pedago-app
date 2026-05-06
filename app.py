@@ -1,180 +1,193 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
+import base64
+import io
 import time
 import json
-import logging
 from datetime import datetime
 from groq import Groq
 from gtts import gTTS
-import base64
-import io
+from streamlit_mic_recorder import speech_to_text
 
 # =================================================================
-# MODULE 1: SYSTEM LOGGING & TELEMETRY
+# MODULE 1: GLOBAL CONFIGURATION & THEMES
 # =================================================================
-# Εξηγείς στον καθηγητή: "Χρησιμοποιώ βιομηχανικά πρότυπα για logging"
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# =================================================================
-# MODULE 2: CONSTANTS & CONFIGURATION
-# =================================================================
-class Config:
-    VERSION = "2.5.0-PRO"
-    APP_NAME = "PedaGO Genesis: Edem Morning Edition"
+class AppConfig:
+    """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
+    TITLE = "PedaGO Genesis Pro v3.0"
+    VERSION = "Build 2026.Innovation"
     THEMES = {
-        "Edem": {"primary": "#10b981", "secondary": "#ecfdf5", "icon": "🌿"},
-        "Space": {"primary": "#6366f1", "secondary": "#e0e7ff", "icon": "🚀"},
-        "Logic": {"primary": "#f59e0b", "secondary": "#fffbeb", "icon": "🧩"}
+        "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά."},
+        "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο."},
+        "Διάστημα": {"color": "#6366f1", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια και εξερεύνηση."}
     }
-    XP_REWARDS = {"message": 10, "correct_answer": 50, "streak_bonus": 100}
 
 # =================================================================
-# MODULE 3: DATA PERSISTENCE LAYER (DATABASE SIMULATION)
+# MODULE 2: VOICE & AUDIO ENGINE (STT / TTS)
 # =================================================================
-class DatabaseManager:
-    """Διαχείριση δεδομένων χρήστη και ιστορικού προόδου"""
+class VoiceEngine:
+    """Subsystem για Φωνητική Αλληλεπίδραση"""
     @staticmethod
-    def load_user_profile():
-        if "user_data" not in st.session_state:
-            st.session_state.user_data = {
-                "id": "USR-99", "name": "Ήρωας", "xp": 0, "level": 1,
-                "badges": [], "session_count": 0, "last_login": str(datetime.now()),
-                "history_log": [] # Εδώ αποθηκεύονται τα πάντα για τα Analytics
-            }
-        return st.session_state.user_data
+    def speak(text):
+        """Μετατροπή κειμένου σε ήχο με αυτόματη αναπαραγωγή"""
+        try:
+            tts = gTTS(text=text, lang='el')
+            fp = io.BytesIO()
+            tts.write_to_fp(fp)
+            fp.seek(0)
+            b64 = base64.b64encode(fp.read()).decode()
+            audio_html = f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
+            st.markdown(audio_html, unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"TTS Error: {e}")
 
     @staticmethod
-    def update_xp(points):
-        st.session_state.user_data["xp"] += points
-        # Logic για Level up
-        new_level = (st.session_state.user_data["xp"] // 500) + 1
-        if new_level > st.session_state.user_data["level"]:
-            st.session_state.user_data["level"] = new_level
-            st.toast(f"🎉 Συγχαρητήρια! Ανέβηκες στο επίπεδο {new_level}!", icon="🆙")
+    def listen():
+        """Λήψη φωνής και μετατροπή σε κείμενο (STT)"""
+        return speech_to_text(
+            language='el',
+            start_prompt="🎤 Πάτα & Μίλησε στον Φοίβο",
+            stop_prompt="🛑 Σταμάτα",
+            just_once=True,
+            key='STT_Component'
+        )
 
 # =================================================================
-# MODULE 4: AFFECTIVE AI ORCHESTRATOR
+# MODULE 3: AFFECTIVE AI CORE (THE BRAIN)
 # =================================================================
 class PhoebusBrain:
-    """Ο 'εγκέφαλος' του Φοίβου με χρήση Affective Computing"""
-    def __init__(self, api_key):
-        self.client = Groq(api_key=api_key)
+    """Η Καρδιά του Φοίβου με Συναισθηματική Νοημοσύνη"""
+    def __init__(self):
+        self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
     def analyze_sentiment(self, text):
-        # Meta-analysis του κειμένου για συναισθηματική νοημοσύνη
-        prompt = f"Analyze the tone of this child's message: '{text}'. Return ONLY one word: Happy, Confused, Tired, or Excited."
+        """Καινοτομία: Ανάλυση συναισθήματος πριν την απάντηση"""
+        prompt = f"Analyze child sentiment: '{text}'. Return JSON: {{'mood': 'happy/sad/tired', 'energy': 1-10}}"
         response = self.client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[{"role": "user", "content": prompt}]
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": "You are a child psychologist."},
+                      {"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        return response.choices[0].message.content
+        return json.loads(response.choices[0].message.content)
 
-    def generate_response(self, world, history, sentiment):
-        # Δυναμική προσαρμογή του System Prompt βάσει συναισθήματος (ΚΑΙΝΟΤΟΜΙΑ)
-        system_instructions = f"""
-        Είσαι ο Φοίβος στο κόσμο: {world}. 
-        Το παιδί νιώθει: {sentiment}. 
-        Προσάρμοσε τη διδασκαλία σου με Σωκρατική Μέθοδο. 
-        Μην δίνεις έτοιμες απαντήσεις. Χρησιμοποίησε γλυκιά γλώσσα.
-        """
-        messages = [{"role": "system", "content": system_instructions}] + history
+    def generate_response(self, history, mood_context, world_prompt):
+        """Παραγωγή απάντησης με βάση το συναίσθημα και τον κόσμο"""
+        full_prompt = f"{world_prompt}. Το παιδί νιώθει {mood_context['mood']}. Προσάρμοσε τον τόνο σου."
+        messages = [{"role": "system", "content": full_prompt}] + history
         
         response = self.client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
-            temperature=0.8
+            temperature=0.7
         )
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 5: ANALYTICS & VISUALIZATION ENGINE
+# MODULE 4: SAAS & GAMIFICATION MANAGER
 # =================================================================
-class AnalyticsEngine:
-    """Μετατρέπει τα δεδομένα σε γραφήματα για τον καθηγητή/γονέα"""
+class SessionManager:
+    """Διαχείριση Χρήστη, XP και Συνδρομών"""
     @staticmethod
-    def plot_progress():
-        # Προσομοίωση δεδομένων εβδομάδας
-        df = pd.DataFrame({
-            "Ημέρα": ["Δευτ", "Τρ", "Τετ", "Πεμ", "Παρ", "Σαβ", "Κυρ"],
-            "XP": [50, 120, 200, 180, 300, 450, st.session_state.user_data["xp"]]
-        })
-        return px.line(df, x="Ημέρα", y="XP", title="Καμπύλη Μάθησης & Προόδου", markers=True)
+    def initialize():
+        if "user" not in st.session_state:
+            st.session_state.user = {
+                "name": "Ήρωας", "xp": 0, "level": 1, "plan": "Free",
+                "usage": 0, "history": [], "mood": "Ήρεμος"
+            }
+        if "page" not in st.session_state: st.session_state.page = "login"
+
+    @staticmethod
+    def add_xp(points):
+        st.session_state.user["xp"] += points
+        st.session_state.user["level"] = (st.session_state.user["xp"] // 100) + 1
 
 # =================================================================
-# MODULE 6: UI COMPONENTS (MODERN DESIGN)
+# MODULE 5: UI & PAGES
 # =================================================================
-def apply_custom_styles():
-    st.markdown("""
-        <style>
-        .main { background-color: #f8fafc; }
-        .stButton>button { width: 100%; border-radius: 15px; height: 3em; transition: 0.3s; }
-        .stButton>button:hover { transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .card { padding: 20px; border-radius: 20px; background: white; border: 1px solid #e2e8f0; margin-bottom: 15px; }
-        .phoebus-chat { border-left: 5px solid #10b981; padding-left: 15px; margin: 10px 0; }
-        </style>
+def render_hud():
+    """Εμφάνιση HUD (Heads-Up Display) με XP και Mood"""
+    st.markdown(f"""
+        <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:15px; margin-bottom:20px;">
+            ✨ XP: {st.session_state.user['xp']} | 🏆 Level: {st.session_state.user['level']} | 
+            🎭 Mood: {st.session_state.user['mood']} | 💎 Plan: {st.session_state.user['plan']}
+        </div>
     """, unsafe_allow_html=True)
 
-# =================================================================
-# MAIN APPLICATION ROUTER
-# =================================================================
 def main():
-    apply_custom_styles()
-    user = DatabaseManager.load_user_profile()
-    brain = PhoebusBrain(api_key=st.secrets["GROQ_API_KEY"])
+    SessionManager.initialize()
+    brain = PhoebusBrain()
+    
+    # --- PAGE: LOGIN / SAAS TIERS ---
+    if st.session_state.page == "login":
+        st.title("🚀 PedaGO Genesis Pro")
+        st.subheader("Η δική σου Πρωινή Εδέμ περιμένει!")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.info("### Basic Plan\n- 5 Μηνύματα/μέρα\n- Standard AI")
+            if st.button("Επιλογή Basic"):
+                st.session_state.user["plan"] = "Free"
+                st.session_state.page = "hub"
+                st.rerun()
+        with col2:
+            st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
+            if st.button("Ενεργοποίηση Pro 💎"):
+                st.session_state.user["plan"] = "Pro"
+                st.session_state.page = "hub"
+                st.rerun()
 
-    # --- SIDEBAR (SaaS Controls) ---
-    with st.sidebar:
-        st.title("🛡️ Parent Control")
-        st.write(f"Hero: **{user['name']}**")
-        st.progress(user["xp"] % 500 / 500, text=f"Level {user['level']}")
-        
-        if st.button("📊 View Full Analytics"):
-            st.session_state.page = "analytics"
-        if st.button("🏠 Return to World Map"):
-            st.session_state.page = "map"
-
-    # --- ROUTING LOGIC ---
-    if "page" not in st.session_state: st.session_state.page = "map"
-
-    if st.session_state.page == "map":
-        st.title("🌟 Η Πρωινή σου Εδέμ")
+    # --- PAGE: WORLD HUB ---
+    elif st.session_state.page == "hub":
+        render_hud()
+        st.title("🗺️ Διάλεξε τον Κόσμο σου")
         cols = st.columns(3)
-        for i, (name, data) in enumerate(Config.THEMES.items()):
+        for i, (name, data) in enumerate(AppConfig.THEMES.items()):
             with cols[i]:
-                st.markdown(f"<div class='card'><h2>{data['icon']}</h2><h3>{name}</h3></div>", unsafe_allow_html=True)
-                if st.button(f"Είσοδος στο {name}", key=name):
-                    st.session_state.world = name
+                st.markdown(f"### {data['icon']} {name}")
+                if st.button(f"Ταξίδι στο {name}"):
+                    st.session_state.current_world = name
                     st.session_state.page = "adventure"
                     st.rerun()
 
+    # --- PAGE: ADVENTURE (THE HEART) ---
     elif st.session_state.page == "adventure":
-        st.title(f"{Config.THEMES[st.session_state.world]['icon']} {st.session_state.world}")
+        render_hud()
+        world = st.session_state.current_world
+        st.header(f"{AppConfig.THEMES[world]['icon']} {world}")
         
-        # Chat Interface
-        if "chat_history" not in st.session_state: st.session_state.chat_history = []
-        
-        for msg in st.session_state.chat_history:
-            with st.chat_message(msg["role"]):
-                st.write(msg["content"])
+        # Display Chat History
+        for msg in st.session_state.user["history"]:
+            with st.chat_message(msg["role"]): st.write(msg["content"])
 
-        if prompt := st.chat_input("Μίλησε στον Φοίβο..."):
-            st.session_state.chat_history.append({"role": "user", "content": prompt})
+        # Voice Interaction
+        user_speech = VoiceEngine.listen()
+        
+        if user_speech:
+            st.session_state.user["history"].append({"role": "user", "content": user_speech})
             
-            # AI Logic με Sentiment Analysis
-            sentiment = brain.analyze_sentiment(prompt)
-            response = brain.generate_response(st.session_state.world, st.session_state.chat_history, sentiment)
-            
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-            DatabaseManager.update_xp(Config.XP_REWARDS["message"])
+            # Innovation: Analyze Mood & Generate Response
+            with st.spinner("Ο Φοίβος σε αισθάνεται..."):
+                mood_data = brain.analyze_sentiment(user_speech)
+                st.session_state.user["mood"] = mood_data["mood"]
+                
+                response = brain.generate_response(
+                    st.session_state.user["history"], 
+                    mood_data, 
+                    AppConfig.THEMES[world]["prompt"]
+                )
+                
+                st.session_state.user["history"].append({"role": "assistant", "content": response})
+                SessionManager.add_xp(20)
+                
+                # Output Voice
+                VoiceEngine.speak(response)
+                st.rerun()
+
+        if st.button("🏠 Επιστροφή στο Hub"):
+            st.session_state.user["history"] = []
+            st.session_state.page = "hub"
             st.rerun()
-
-    elif st.session_state.page == "analytics":
-        st.header("📈 Επιστημονική Αξιολόγηση")
-        st.plotly_chart(AnalyticsEngine.plot_progress(), use_container_width=True)
-        st.write("Συνολικά XP:", user["xp"])
-        st.write("Επίπεδο Γνώσης:", user["level"])
 
 if __name__ == "__main__":
     main()
