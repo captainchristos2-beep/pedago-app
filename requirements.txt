@@ -4,3 +4,4 @@ streamlit-mic-recorder
 gTTS
 pandas
 plotly
+pip install streamlit-lottie
