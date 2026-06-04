@@ -104,14 +104,14 @@ class SessionManager:
         st.session_state.user["level"] = (st.session_state.user["xp"] // 100) + 1
 
 # =================================================================
-# MODULE 5: UI & PAGES
+# MODULE 5: UI & PAGES (MONETIZED EDITION)
 # =================================================================
 def render_hud():
     """Εμφάνιση HUD (Heads-Up Display) με XP και Mood"""
     st.markdown(f"""
         <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:15px; margin-bottom:20px;">
             ✨ XP: {st.session_state.user['xp']} | 🏆 Level: {st.session_state.user['level']} | 
-            🎭 Mood: {st.session_state.user['mood']} | 💎 Plan: {st.session_state.user['plan']}
+            🎭 Mood: {st.session_state.user['mood']} | 💎 Πλάνο: {st.session_state.user['plan']}
         </div>
     """, unsafe_allow_html=True)
 
@@ -124,15 +124,43 @@ def main():
         st.title("🚀 PedaGO Genesis Pro")
         st.subheader("Η δική σου Πρωινή Εδέμ περιμένει!")
         col1, col2 = st.columns(2)
+        
         with col1:
             st.info("### Basic Plan\n- 5 Μηνύματα/μέρα\n- Standard AI")
             if st.button("Επιλογή Basic"):
                 st.session_state.user["plan"] = "Free"
                 st.session_state.page = "hub"
                 st.rerun()
+                
         with col2:
             st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
-            if st.button("Ενεργοποίηση Pro 💎"):
+            
+            # ΑΝΤΙΚΑΤΑΣΤΑΣΗ ΜΕ PREMIUM STRIPE GATEWAY BUTTON
+            # TODO: Αντικατάστησε το URL παρακάτω με το δικό σου live Stripe Link
+            stripe_link = "https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00" 
+            
+            st.markdown(f"""
+                <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
+                    <div style="
+                        background-color: #10b981;
+                        color: white;
+                        padding: 12px 20px;
+                        text-align: center;
+                        border-radius: 10px;
+                        font-weight: bold;
+                        font-size: 16px;
+                        margin-top: 10px;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                        cursor: pointer;
+                        transition: 0.3s;">
+                        💎 Ενεργοποίηση Pro (9.99€/μήνα)
+                    </div>
+                </a>
+                <p style="text-align:center; font-size:12px; color:gray; margin-top:5px;">Ασφαλής πληρωμή μέσω Stripe Checkout</p>
+            """, unsafe_allow_html=True)
+            
+            # Κουμπί για παράκαμψη/προσομοίωση (χρήσιμο για την παρουσίαση)
+            if st.button("Σύνδεση ως Pro (Demo Mode)", help="Μόνο για την επίδειξη στην επιτροπή"):
                 st.session_state.user["plan"] = "Pro"
                 st.session_state.page = "hub"
                 st.rerun()
