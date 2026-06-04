@@ -17,7 +17,7 @@ from streamlit_lottie import st_lottie
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v3.5"
+    TITLE = "PedaGO Genesis Pro v3.6"
     VERSION = "Build 2026.Premium"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια."},
@@ -185,8 +185,31 @@ def main():
                 st.rerun()
         with col2:
             st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
-            stripe_link = "https://buy.stripe.com/σου_εδώ" 
-            st.markdown(f'<a href="{stripe_link}" target="_blank" style="text-decoration:none;"><div style="background-color:#10b981;color:white;padding:12px;text-align:center;border-radius:10px;font-weight:bold;font-size:16px;">💎 Ενεργοποίηση Pro (9.99€/μήνα)</div></a>', unsafe_allow_html=True)
+            
+            # ΔΙΟΡΘΩΣΗ: Προσθήκη του επίσημου, live Stripe Payment Link
+            stripe_link = "https://buy.stripe.com/5kA6oE736g1Y5JCdQQ"
+            
+            st.markdown(f"""
+                <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
+                    <div style="
+                        background-color: #10b981;
+                        color: white;
+                        padding: 14px 20px;
+                        text-align: center;
+                        border-radius: 12px;
+                        font-weight: bold;
+                        font-size: 16px;
+                        margin-top: 10px;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+                        cursor: pointer;
+                        display: block;
+                        transition: 0.3s;
+                        border: 1px solid #059669;">
+                        💎 Ενεργοποίηση Pro (9.99€/μήνα)
+                    </div>
+                </a>
+                <p style="text-align:center; font-size:12px; color:gray; margin-top:6px;">Ασφαλής πληρωμή μέσω Stripe Checkout</p>
+            """, unsafe_allow_html=True)
             
             if st.button("Σύνδεση ως Pro (Demo Mode)", use_container_width=True):
                 st.session_state.user["plan"] = "Pro"
