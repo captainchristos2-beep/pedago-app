@@ -5,36 +5,23 @@ import base64
 import io
 import time
 import json
-import requests
 from datetime import datetime
 from groq import Groq
 from gtts import gTTS
 from streamlit_mic_recorder import speech_to_text
-from streamlit_lottie import st_lottie
 
 # =================================================================
-# MODULE 1: GLOBAL CONFIGURATION & ANIMATIONS
+# MODULE 1: GLOBAL CONFIGURATION & THEMES
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v3.7"
+    TITLE = "PedaGO Genesis Pro v3.8"
     VERSION = "Build 2026.Premium"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια."},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο."},
         "Διάστημα": {"color": "#6366f1", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες και εξερεύνηση."}
     }
-
-    @staticmethod
-    def load_lottie_url(url: str):
-        """Φόρτωση Lottie Animations από το web"""
-        try:
-            r = requests.get(url)
-            if r.status_code != 200:
-                return None
-            return r.json()
-        except:
-            return None
 
 # =================================================================
 # MODULE 2: VOICE & AUDIO ENGINE (STT / TTS)
@@ -102,7 +89,7 @@ class SessionManager:
     def initialize():
         if "user" not in st.session_state:
             st.session_state.user = {
-                "name": "Ήρωας", # Default αρχική τιμή προ Onboarding
+                "name": "Ήρωας",
                 "xp": 40, 
                 "level": 1, 
                 "plan": "Free",
@@ -111,7 +98,7 @@ class SessionManager:
                 "age": 5,
                 "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"],
                 "xp_history": [10, 20, 40],
-                "onboarded": False # Key-flag για την πρώτη σύνδεση
+                "onboarded": False
             }
         if "page" not in st.session_state: 
             st.session_state.page = "login"
@@ -138,7 +125,6 @@ def render_hud():
 
 def render_sidebar():
     """Επαγγελματικό Μενού Πλοήγησης (Back & Forward)"""
-    # Το μενού εμφανίζεται ΜΟΝΟ αν ο χρήστης έχει ολοκληρώσει το Onboarding
     if st.session_state.page != "login" and st.session_state.page != "onboarding":
         st.sidebar.title("📌 Πλοήγηση")
         st.sidebar.write(f"Γεια σου, **{st.session_state.user['name']}**!")
@@ -168,23 +154,42 @@ def main():
     render_sidebar()
     brain = PhoebusBrain()
 
-    # Φόρτωση Παιδικού Animation για τη μουντάδα
-    child_anim = AppConfig.load_lottie_url("https://assets5.lottiefiles.com/packages/lf20_ch84wup9.json")
-    
     # --- PAGE: LOGIN / SAAS TIERS ---
     if st.session_state.page == "login":
         st.title("🚀 PedaGO Genesis Pro")
         st.subheader("Η δική σου Πρωινή Εδέμ περιμένει!")
         
-        if child_anim:
-            st_lottie(child_anim, height=200, key="login_anim")
+        # Premium CSS Micro-animation για εξάλειψη της μουντάδας χωρίς εξωτερικές βιβλιοθήκες
+        st.markdown("""
+            <style>
+            @keyframes pulse {
+                0% { transform: scale(0.98); opacity: 0.9; }
+                50% { transform: scale(1.01); opacity: 1; }
+                100% { transform: scale(0.98); opacity: 0.9; }
+            }
+            .animated-banner {
+                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                color: white;
+                padding: 30px;
+                border-radius: 20px;
+                text-align: center;
+                font-size: 22px;
+                font-weight: bold;
+                margin-bottom: 30px;
+                animation: pulse 4s infinite ease-in-out;
+                box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+            }
+            </style>
+            <div class="animated-banner">
+                ✨ Καλώς ήρθες στον Κόσμο του Φοίβου! Ολοκληρωμένη Πλατφόρμα Εκπαιδευτικής Τεχνολογίας
+            </div>
+        """, unsafe_allow_html=True)
             
         col1, col2 = st.columns(2)
         with col1:
             st.info("### Basic Plan\n- 5 Μηνύματα/μέρα\n- Standard AI")
             if st.button("Επιλογή Basic", use_container_width=True):
                 st.session_state.user["plan"] = "Free"
-                # Έλεγχος Onboarding
                 st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
                 st.rerun()
         with col2:
@@ -216,31 +221,28 @@ def main():
             
             if st.button("Σύνδεση ως Pro (Demo Mode)", use_container_width=True):
                 st.session_state.user["plan"] = "Pro"
-                # Έλεγχος Onboarding
                 st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
                 st.rerun()
 
-    # --- NEW PAGE: FIRST TIME USER ONBOARDING ---
+    # --- PAGE: FIRST TIME USER ONBOARDING ---
     elif st.session_state.page == "onboarding":
         st.title("👋 Καλώς ήρθες στο PedaGO!")
         st.subheader("Ας δημιουργήσουμε το προφίλ του μικρού μας εξερευνητή για πρώτη φορά.")
         
-        # Καθαρή, οργανωμένη φόρμα συλλογής πρώτων στοιχείων
         with st.form("onboarding_form"):
             st.markdown("#### 📝 Στοιχεία Μαθητή")
             onboard_name = st.text_input("Πώς σε φωνάζουν; (Όνομα Παιδιού):", placeholder="π.χ. Νικόλας")
             onboard_age = st.number_input("Πόσων χρονών είσαι; (Ηλικία):", min_value=3, max_value=12, value=5)
             
-            submit_onboarding = st.form_submit_with_rows_cols = st.form_submit_button("🚀 Ξεκινάμε το Ταξίδι!", use_container_width=True)
+            submit_onboarding = st.form_submit_button("🚀 Ξεκινάμε το Ταξίδι!", use_container_width=True)
             
             if submit_onboarding:
                 if onboard_name.strip() == "":
                     st.error("💡 Σε παρακαλώ, συμπλήρωσε το όνομα του παιδιού για να μπορεί ο Φοίβος να του απευθύνεται σωστά!")
                 else:
-                    # Αποθήκευση στοιχείων στο state
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
-                    st.session_state.user["onboarded"] = True # Σημειώνεται ότι ολοκληρώθηκε
+                    st.session_state.user["onboarded"] = True
                     
                     st.success(f"🎉 Πανέτοιμα! Το προφίλ του/της {onboard_name} δημιουργήθηκε!")
                     time.sleep(1.5)
@@ -309,7 +311,7 @@ def main():
             
         st.write("### 📈 Καμπύλη Μάθησης (XP Progression)")
         fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#10b981', width=3)))
-        fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεpιδράσεις", yaxis_title="XP")
+        fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεπιδράσεις", yaxis_title="XP")
         st.plotly_chart(fig_xp, use_container_width=True)
         
         st.write("### 🎭 Συναισθηματικό Ιστορικό (Mood Tracker)")
@@ -324,4 +326,11 @@ def main():
         new_age = st.number_input("Ηλικία Παιδιού:", min_value=3, max_value=12, value=st.session_state.user["age"])
         
         if st.button("💾 Αποθήκευση Αλλαγών", use_container_width=True):
-            st.session_state.
+            st.session_state.user["name"] = new_name
+            st.session_state.user["age"] = new_age
+            st.success("Το προφίλ ενημερώθηκε επιτυχώς!")
+            time.sleep(1)
+            st.rerun()
+
+if __name__ == "__main__":
+    main()
