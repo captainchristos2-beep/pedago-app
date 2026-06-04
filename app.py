@@ -5,6 +5,7 @@ import base64
 import io
 import time
 import json
+import sqlite3
 from datetime import datetime
 from groq import Groq
 from gtts import gTTS
@@ -15,12 +16,12 @@ from streamlit_mic_recorder import speech_to_text
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v4.0"
+    TITLE = "PedaGO Genesis Pro v5.0"
     VERSION = "Build 2026.Infinite"
     THEMES = {
-        "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια."},
-        "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο."},
-        "Διάστημα": {"color": "#6366f1", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες και εξερεύνηση."}
+        "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)"},
+        "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)"},
+        "Διάστημα": {"color": "#6366f1", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες και εξερεύνηση.", "bg": "linear-gradient(135deg, #1e1b4b, #0f172a)"}
     }
 
 # =================================================================
@@ -81,27 +82,92 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS & DATA MANAGER
+# MODULE 4: SAAS & DATA MANAGER (WITH SQL PERSISTENCE)
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρήστη, XP, Ιστορικού, Onboarding & Χρονοδιακόπτη"""
+    """Διαχείριση Χρήστη, SQLite Βάσης, XP, Ιστορικού, Onboarding & Χρονοδιακόπτη"""
+    
     @staticmethod
-    def initialize():
-        if "user" not in st.session_state:
-            st.session_state.user = {
-                "name": "Ήρωας",
-                "xp": 40, 
-                "level": 1, 
-                "plan": "Free",
+    def init_db():
+        """Αρχικοποίηση Τοπικής Βάσης Δεδομένων SQLite"""
+        conn = sqlite3.connect("pedago.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_profile (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                xp INTEGER,
+                level INTEGER,
+                plan TEXT,
+                age INTEGER,
+                onboarded INTEGER
+            )
+        """)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def save_to_db(user_data):
+        """Αποθήκευση στοιχείων στη SQLite"""
+        conn = sqlite3.connect("pedago.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM user_profile WHERE id = 1")
+        cursor.execute("""
+            INSERT INTO user_profile (id, name, xp, level, plan, age, onboarded)
+            VALUES (1, ?, ?, ?, ?, ?, ?)
+        """, (user_data["name"], user_data["xp"], user_data["level"], user_data["plan"], user_data["age"], 1 if user_data["onboarded"] else 0))
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def load_from_db():
+        """Φόρτωση στοιχείων από τη SQLite"""
+        conn = sqlite3.connect("pedago.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, xp, level, plan, age, onboarded FROM user_profile WHERE id = 1")
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {
+                "name": row[0],
+                "xp": row[1],
+                "level": row[2],
+                "plan": row[3],
+                "age": row[4],
+                "onboarded": True if row[5] == 1 else False,
                 "history": [], 
                 "mood": "Ήρεμος",
-                "age": 5,
-                "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"],
-                "xp_history": [10, 20, 40],
-                "onboarded": False,
+                "mood_history": ["Χαρούμενος", "Ήρεμος"],
+                "xp_history": [10, row[1]],
                 "usage_count": 0,       
-                "max_usage": 3          
+                "max_usage": 3,
+                "vocab_bonus": False
             }
+        return None
+
+    @staticmethod
+    def initialize():
+        SessionManager.init_db()
+        if "user" not in st.session_state:
+            db_user = SessionManager.load_from_db()
+            if db_user:
+                st.session_state.user = db_user
+            else:
+                st.session_state.user = {
+                    "name": "Ήρωας",
+                    "xp": 40, 
+                    "level": 1, 
+                    "plan": "Free",
+                    "history": [], 
+                    "mood": "Ήρεμος",
+                    "age": 5,
+                    "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"],
+                    "xp_history": [10, 20, 40],
+                    "onboarded": False,
+                    "usage_count": 0,       
+                    "max_usage": 3,
+                    "vocab_bonus": False
+                }
         if "page" not in st.session_state: 
             st.session_state.page = "login"
 
@@ -110,6 +176,7 @@ class SessionManager:
         st.session_state.user["xp"] += points
         st.session_state.user["xp_history"].append(st.session_state.user["xp"])
         st.session_state.user["level"] = (st.session_state.user["xp"] // 100) + 1
+        SessionManager.save_to_db(st.session_state.user)
 
     @staticmethod
     def check_screen_time():
@@ -257,12 +324,13 @@ def main():
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
                     st.session_state.user["onboarded"] = True
+                    SessionManager.save_to_db(st.session_state.user) # SQL Save
                     st.success(f"🎉 Πανέτοιμα! Το προφίλ του/της {onboard_name} δημιουργήθηκε!")
                     time.sleep(1.5)
                     st.session_state.page = "hub"
                     st.rerun()
 
-    # --- PAGE: WORLD HUB ---
+    # --- PAGE: WORLD HUB (UPGRADED UI) ---
     elif st.session_state.page == "hub":
         render_hud()
         st.title("🗺️ Διάλεξε τον Κόσμο σου")
@@ -271,16 +339,27 @@ def main():
             st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το ημερήσιο όριο χρήσης για το Free Plan! Ο Φοίβος πήγε να ξεκουραστεί. Αναβάθμισε σε Pro για απεριόριστο χρόνο.")
             return
 
+        st.markdown("""
+            <div style="background: linear-gradient(135deg, #6366f1, #4f46e5); color:white; padding:15px; border-radius:12px; margin-bottom:20px;">
+                🎯 <b>Vocabulary Challenge:</b> Χρησιμοποίησε τη λέξη <b>"αστέρι"</b> στη συζήτηση με τον Φοίβο και κέρδισε <b>+50 XP Bonus!</b>
+            </div>
+        """, unsafe_allow_html=True)
+
         cols = st.columns(3)
         for i, (name, data) in enumerate(AppConfig.THEMES.items()):
             with cols[i]:
-                st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; border-top: 5px solid {data['color']}; text-align:center;'><h3>{data['icon']} {name}</h3></div>", unsafe_allow_html=True)
-                if st.button(f"Ταξίδι στο {name}", key=name, use_container_width=True):
+                st.markdown(f"""
+                    <div style='background: {data["bg"]}; padding:30px; border-radius:20px; border: 2px solid {data["color"]}; text-align:center; box-shadow: 0 10px 20px rgba(0,0,0,0.2);'>
+                        <h2 style='color: white; margin-bottom:15px;'>{data['icon']} {name}</h2>
+                        <p style='color: #cbd5e1; font-size:14px; min-height:40px;'>Έτοιμος για περιπεριπέτεια;</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"Είσοδος: {name}", key=name, use_container_width=True):
                     st.session_state.current_world = name
                     st.session_state.page = "adventure"
                     st.rerun()
 
-    # --- PAGE: ADVENTURE (THE HEART) ---
+    # --- PAGE: ADVENTURE (THE HEART + AFFECTIVE AVATAR) ---
     elif st.session_state.page == "adventure":
         render_hud()
         
@@ -300,6 +379,24 @@ def main():
                 st.session_state.page = "hub"
                 st.rerun()
         
+        # ΝΕΟ: HCI Mood-Aware Avatar του Φοίβου βασισμένο στο Affective Core
+        current_mood = st.session_state.user["mood"].lower()
+        avatar_icon = "🧸✨"
+        avatar_style = "border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1);"
+        if "κουρασμένος" in current_mood or "λυπημένος" in current_mood:
+            avatar_icon = "🧸💤"
+            avatar_style = "border: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.1);"
+        
+        st.markdown(f"""
+            <div style="padding: 15px; border-radius: 15px; {avatar_style} margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 35px;">{avatar_icon}</div>
+                <div>
+                    <b style="color: white; font-size: 16px;">Ψηφιακός Μέντορας Φοίβος</b><br>
+                    <span style="color: #cbd5e1; font-size: 14px;">Κατάσταση: Ανιχνεύω τη διάθεσή σου ως <i><b>{st.session_state.user['mood']}</b></i>. Είμαι έτοιμος να σε ακούσω!</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
         for msg in st.session_state.user["history"]:
             with st.chat_message(msg["role"]): st.write(msg["content"])
 
@@ -308,6 +405,11 @@ def main():
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1 
             
+            if "αστέρι" in user_speech.lower() and not st.session_state.user["vocab_bonus"]:
+                st.session_state.user["vocab_bonus"] = True
+                SessionManager.add_xp(50)
+                st.toast("🎯 Bonus +50 XP! Χρησιμοποίησες τη Λέξη της Ημέρας!", icon="✨")
+
             with st.spinner("Ο Φοίβος σε ακούει με προσοχή..."):
                 mood_data = brain.analyze_sentiment(user_speech)
                 st.session_state.user["mood"] = mood_data["mood"]
@@ -323,7 +425,7 @@ def main():
                 VoiceEngine.speak(response)
                 st.rerun()
 
-    # --- PAGE: PARENT DASHBOARD & ACHIEVEMENTS ---
+    # --- PAGE: PARENT DASHBOARD & COGNITIVE RADAR ---
     elif st.session_state.page == "parent_dashboard":
         st.title("📊 Dashboard Γονέα & Analytics")
         st.subheader(f"Συμπεράσματα και Πρόοδος για τον/την: {st.session_state.user['name']}")
@@ -350,10 +452,32 @@ def main():
                 st.code("🔒 Κλειδωμένο\n(Χρειάζεται Level 2)")
 
         st.write("---")
-        st.write("### 📈 Καμπύλη Μάθησης (XP Progression)")
-        fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#10b981', width=3)))
-        fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεπιδράσεις", yaxis_title="XP")
-        st.plotly_chart(fig_xp, use_container_width=True)
+        
+        col_chart1, col_chart2 = st.columns(2)
+        
+        with col_chart1:
+            st.write("### 📊 Παιδαγωγικό Προφίλ Δεξιοτήτων")
+            categories = ['Λεξιλόγιο', 'Κριτική Σκέψη', 'Συναισθηματική Αυτορύθμιση', 'Ταχύτητα Απόκρισης', 'Κοινωνική Ενσυναίσθηση']
+            fig_radar = go.Figure()
+            fig_radar.add_trace(go.Scatterpolar(
+                r=[4, 3, 5, 4, 4],
+                theta=categories,
+                fill='toself',
+                marker=dict(color='#10b981')
+            ))
+            fig_radar.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
+                showlegend=False,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig_radar, use_container_width=True)
+
+        with col_chart2:
+            st.write("### 📈 Καμπύλη Μάθησης (XP Progression)")
+            fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#10b981', width=3)))
+            fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεπιδράσεις", yaxis_title="XP")
+            st.plotly_chart(fig_xp, use_container_width=True)
         
         st.write("### 🎭 Συναισθηματικό Ιστορικό (Mood Tracker)")
         st.info(f"Η τελευταία καταγεγραμμένη διάθεση του παιδιού είναι: **{st.session_state.user['mood']}**")
@@ -389,7 +513,8 @@ def main():
         if st.button("💾 Αποθήκευση Αλλαγών", use_container_width=True):
             st.session_state.user["name"] = new_name
             st.session_state.user["age"] = new_age
-            st.success("Το προφίλ ενημερώθηκε επιτυχώς!")
+            SessionManager.save_to_db(st.session_state.user) # SQL Update
+            st.success("Το προφίλ ενημερώθηκε επιτυχώς στη μόνιμη βάση!")
             time.sleep(1)
             st.rerun()
 
