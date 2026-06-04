@@ -15,8 +15,8 @@ from streamlit_mic_recorder import speech_to_text
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v3.8"
-    VERSION = "Build 2026.Premium"
+    TITLE = "PedaGO Genesis Pro v3.9"
+    VERSION = "Build 2026.Enterprise"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια."},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο."},
@@ -81,10 +81,10 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS & DATA MANAGER
+# MODULE 4: SAAS & DATA MANAGER (EXTENDED)
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρήστη, XP, Ιστορικού & Onboarding"""
+    """Διαχείριση Χρήστη, XP, Ιστορικού, Onboarding & Χρονοδιακόπτη"""
     @staticmethod
     def initialize():
         if "user" not in st.session_state:
@@ -98,7 +98,9 @@ class SessionManager:
                 "age": 5,
                 "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"],
                 "xp_history": [10, 20, 40],
-                "onboarded": False
+                "onboarded": False,
+                "usage_count": 0,       # Μετρητής μηνυμάτων για τον χρονοδιακόπτη
+                "max_usage": 3          # Όριο για το Free Plan
             }
         if "page" not in st.session_state: 
             st.session_state.page = "login"
@@ -109,17 +111,26 @@ class SessionManager:
         st.session_state.user["xp_history"].append(st.session_state.user["xp"])
         st.session_state.user["level"] = (st.session_state.user["xp"] // 100) + 1
 
+    @staticmethod
+    def check_screen_time():
+        """Έλεγχος αν ο χρήστης ξεπέρασε το όριο χρόνου/μηνυμάτων"""
+        if st.session_state.user["plan"] == "Free" and st.session_state.user["usage_count"] >= st.session_state.user["max_usage"]:
+            return True
+        return False
+
 # =================================================================
 # MODULE 5: UI COMPONENTS & PAGES
 # =================================================================
 def render_hud():
     """Εμφάνιση HUD (Heads-Up Display) με Premium Σχεδιασμό"""
+    remaining = max(0, st.session_state.user["max_usage"] - st.session_state.user["usage_count"]) if st.session_state.user["plan"] == "Free" else "∞"
     st.markdown(f"""
         <div style="background: linear-gradient(135deg, #1e293b, #0f172a); padding:18px; border-radius:15px; margin-bottom:25px; border: 1px solid #334155; color: white;">
-            <span style="font-size:16px; margin-right:15px;">✨ <b>XP:</b> {st.session_state.user['xp']}</span> | 
-            <span style="font-size:16px; margin-left:15px; margin-right:15px;">🏆 <b>Επίπεδο:</b> {st.session_state.user['level']}</span> | 
-            <span style="font-size:16px; margin-left:15px; margin-right:15px;">🎭 <b>Διάθεση:</b> {st.session_state.user['mood']}</span> | 
-            <span style="font-size:16px; margin-left:15px;">💎 <b>Πλάνο:</b> <span style="color:#10b981; font-weight:bold;">{st.session_state.user['plan']}</span></span>
+            <span style="font-size:14px; margin-right:12px;">✨ <b>XP:</b> {st.session_state.user['xp']}</span> | 
+            <span style="font-size:14px; margin-left:12px; margin-right:12px;">🏆 <b>Επίπεδο:</b> {st.session_state.user['level']}</span> | 
+            <span style="font-size:14px; margin-left:12px; margin-right:12px;">🎭 <b>Διάθεση:</b> {st.session_state.user['mood']}</span> | 
+            <span style="font-size:14px; margin-left:12px; margin-right:12px;">⏳ <b>Μηνύματα:</b> {remaining}</span> |
+            <span style="font-size:14px; margin-left:12px;">💎 <b>Πλάνο:</b> <span style="color:#10b981; font-weight:bold;">{st.session_state.user['plan']}</span></span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -136,6 +147,10 @@ def render_sidebar():
         if st.sidebar.button("📊 Dashboard Γονέα", use_container_width=True):
             st.session_state.page = "parent_dashboard"
             st.rerun()
+
+        if st.sidebar.button("🏫 Educator Portal (B2B)", use_container_width=True):
+            st.session_state.page = "educator_portal"
+            st.rerun()
             
         if st.sidebar.button("⚙️ Ρυθμίσεις Προφίλ", use_container_width=True):
             st.session_state.page = "profile_settings"
@@ -146,6 +161,7 @@ def render_sidebar():
             st.session_state.page = "login"
             st.session_state.user["history"] = []
             st.session_state.user["onboarded"] = False
+            st.session_state.user["usage_count"] = 0
             st.rerun()
 
 def main():
@@ -159,7 +175,6 @@ def main():
         st.title("🚀 PedaGO Genesis Pro")
         st.subheader("Η δική σου Πρωινή Εδέμ περιμένει!")
         
-        # Premium CSS Micro-animation για εξάλειψη της μουντάδας χωρίς εξωτερικές βιβλιοθήκες
         st.markdown("""
             <style>
             @keyframes pulse {
@@ -243,7 +258,6 @@ def main():
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
                     st.session_state.user["onboarded"] = True
-                    
                     st.success(f"🎉 Πανέτοιμα! Το προφίλ του/της {onboard_name} δημιουργήθηκε!")
                     time.sleep(1.5)
                     st.session_state.page = "hub"
@@ -253,6 +267,12 @@ def main():
     elif st.session_state.page == "hub":
         render_hud()
         st.title("🗺️ Διάλεξε τον Κόσμο σου")
+        
+        # Έλεγχος Χρονοδιακόπτη (Screen Time)
+        if SessionManager.check_screen_time():
+            st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το ημερήσιο όριο χρήσης για το Free Plan! Ο Φοίβος πήγε να ξεκουραστεί. Αναβάθμισε σε Pro για απεριόριστο χρόνο.")
+            return
+
         cols = st.columns(3)
         for i, (name, data) in enumerate(AppConfig.THEMES.items()):
             with cols[i]:
@@ -265,8 +285,15 @@ def main():
     # --- PAGE: ADVENTURE (THE HEART) ---
     elif st.session_state.page == "adventure":
         render_hud()
-        world = st.session_state.current_world
         
+        if SessionManager.check_screen_time():
+            st.error("⏰ **Screen Time Guard:** Το όριο χρήσης συμπληρώθηκε! Ώρα για διάλειμμα.")
+            if st.button("🏠 Επιστροφή στο Hub"):
+                st.session_state.page = "hub"
+                st.rerun()
+            return
+
+        world = st.session_state.current_world
         col_title, col_back = st.columns([4, 1])
         with col_title:
             st.header(f"{AppConfig.THEMES[world]['icon']} {world}")
@@ -275,14 +302,14 @@ def main():
                 st.session_state.page = "hub"
                 st.rerun()
         
-        # Display Chat History
         for msg in st.session_state.user["history"]:
             with st.chat_message(msg["role"]): st.write(msg["content"])
 
-        # Voice Interaction
         user_speech = VoiceEngine.listen()
         if user_speech:
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
+            st.session_state.user["usage_count"] += 1 # Αυξάνουμε τον μετρητή χρήσης
+            
             with st.spinner("Ο Φοίβος σε ακούει με προσοχή..."):
                 mood_data = brain.analyze_sentiment(user_speech)
                 st.session_state.user["mood"] = mood_data["mood"]
@@ -298,7 +325,7 @@ def main():
                 VoiceEngine.speak(response)
                 st.rerun()
 
-    # --- PAGE: PARENT DASHBOARD ---
+    # --- PAGE: PARENT DASHBOARD & ACHIEVEMENTS ---
     elif st.session_state.page == "parent_dashboard":
         st.title("📊 Dashboard Γονέα & Analytics")
         st.subheader(f"Συμπεράσματα και Πρόοδος για τον/την: {st.session_state.user['name']}")
@@ -309,6 +336,23 @@ def main():
         with col_m2:
             st.metric("Τρέχον Επίπεδο", f"Level {st.session_state.user['level']}")
             
+        # ΝΕΟ: Σύστημα Παρασήμων (Achievements)
+        st.write("### 🏅 Ψηφιακά Παράσημα (Achievements)")
+        badges_col = st.columns(3)
+        with badges_col[0]:
+            st.success("🌱 **Πρώτο Βήμα**\n(Ξεκλείδωσε με την εγγραφή)")
+        with badges_col[1]:
+            if st.session_state.user["xp"] >= 60:
+                st.success("🏝️ **Εξερευνητής**\n(Ξεκλείδωσε με 60+ XP)")
+            else:
+                st.code("🔒 Κλειδωμένο\n(Χρειάζεται 60 XP)")
+        with badges_col[2]:
+            if st.session_state.user["level"] >= 2:
+                st.success("👑 **Master του Λόγου**\n(Ξεκλείδωσε στο Level 2)")
+            else:
+                st.code("🔒 Κλειδωμένο\n(Χρειάζεται Level 2)")
+
+        st.write("---")
         st.write("### 📈 Καμπύλη Μάθησης (XP Progression)")
         fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#10b981', width=3)))
         fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεπιδράσεις", yaxis_title="XP")
@@ -316,6 +360,27 @@ def main():
         
         st.write("### 🎭 Συναισθηματικό Ιστορικό (Mood Tracker)")
         st.info(f"Η τελευταία καταγεγραμμένη διάθεση του παιδιού είναι: **{st.session_state.user['mood']}**")
+
+    # --- NEW PAGE: EDUCATOR PORTAL (B2B PORTAL) ---
+    elif st.session_state.page == "educator_portal":
+        st.title("🏫 Educator Portal (Στατιστικά Τάξης)")
+        st.subheader("Συγκεντρωτική εικόνα για τους συνεργαζόμενους Παιδικούς Σταθμούς / Νηπιαγωγεία")
+        
+        st.info("💡 Αυτό το Dashboard εμφανίζεται στους εκπαιδευτικούς φορείς που αγοράζουν το B2B Enterprise πακέτο μας.")
+        
+        # Δημιουργία Mock Data για την τάξη
+        class_data = pd.DataFrame({
+            'Μαθητής': ['Νικόλας', 'Μαρία', 'Γιώργος', 'Ελένη', 'Δημήτρης'],
+            'Εβδομαδιαία XP': [120, 240, 90, 310, 150],
+            'Κυρίαρχο Συναίσθημα': ['Χαρούμενος', 'Ενθουσιώδης', 'Κουρασμένος', 'Χαρούμενος', 'Ήρεμος']
+        })
+        
+        st.write("### 📈 Πρόοδος Μαθητών Τμήματος Α1")
+        st.table(class_data)
+        
+        fig_class = go.Figure([go.Bar(x=class_data['Μαθητής'], y=class_data['Εβδομαδιαία XP'], marker_color='#6366f1')])
+        fig_class.update_layout(title="Σύγκριση XP Τάξης", xaxis_title="Μαθητές", yaxis_title="Συνολικά XP")
+        st.plotly_chart(fig_class, use_container_width=True)
 
     # --- PAGE: PROFILE SETTINGS ---
     elif st.session_state.page == "profile_settings":
