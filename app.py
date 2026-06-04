@@ -187,7 +187,7 @@ def main():
             st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
             
             # ΔΙΟΡΘΩΣΗ: Προσθήκη του επίσημου, live Stripe Payment Link
-            stripe_link = "https://buy.stripe.com/5kA6oE736g1Y5JCdQQ"
+            stripe_link = "https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00"
             
             st.markdown(f"""
                 <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
