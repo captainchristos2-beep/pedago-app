@@ -17,7 +17,7 @@ from streamlit_lottie import st_lottie
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v3.6"
+    TITLE = "PedaGO Genesis Pro v3.7"
     VERSION = "Build 2026.Premium"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια."},
@@ -97,20 +97,21 @@ class PhoebusBrain:
 # MODULE 4: SAAS & DATA MANAGER
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρήστη, XP και Ιστορικού"""
+    """Διαχείριση Χρήστη, XP, Ιστορικού & Onboarding"""
     @staticmethod
     def initialize():
         if "user" not in st.session_state:
             st.session_state.user = {
-                "name": "Φίλιππος", 
+                "name": "Ήρωας", # Default αρχική τιμή προ Onboarding
                 "xp": 40, 
                 "level": 1, 
                 "plan": "Free",
                 "history": [], 
                 "mood": "Ήρεμος",
-                "age": 6,
+                "age": 5,
                 "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"],
-                "xp_history": [10, 20, 40]
+                "xp_history": [10, 20, 40],
+                "onboarded": False # Key-flag για την πρώτη σύνδεση
             }
         if "page" not in st.session_state: 
             st.session_state.page = "login"
@@ -137,7 +138,8 @@ def render_hud():
 
 def render_sidebar():
     """Επαγγελματικό Μενού Πλοήγησης (Back & Forward)"""
-    if st.session_state.page != "login":
+    # Το μενού εμφανίζεται ΜΟΝΟ αν ο χρήστης έχει ολοκληρώσει το Onboarding
+    if st.session_state.page != "login" and st.session_state.page != "onboarding":
         st.sidebar.title("📌 Πλοήγηση")
         st.sidebar.write(f"Γεια σου, **{st.session_state.user['name']}**!")
         
@@ -157,6 +159,7 @@ def render_sidebar():
         if st.sidebar.button("🚪 Αποσύνδεση", use_container_width=True):
             st.session_state.page = "login"
             st.session_state.user["history"] = []
+            st.session_state.user["onboarded"] = False
             st.rerun()
 
 def main():
@@ -181,13 +184,13 @@ def main():
             st.info("### Basic Plan\n- 5 Μηνύματα/μέρα\n- Standard AI")
             if st.button("Επιλογή Basic", use_container_width=True):
                 st.session_state.user["plan"] = "Free"
-                st.session_state.page = "hub"
+                # Έλεγχος Onboarding
+                st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
                 st.rerun()
         with col2:
             st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
             
-            # ΔΙΟΡΘΩΣΗ: Προσθήκη του επίσημου, live Stripe Payment Link
-            stripe_link = "https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00"
+            stripe_link = "https://buy.stripe.com/5kA6oE736g1Y5JCdQQ"
             
             st.markdown(f"""
                 <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
@@ -213,8 +216,36 @@ def main():
             
             if st.button("Σύνδεση ως Pro (Demo Mode)", use_container_width=True):
                 st.session_state.user["plan"] = "Pro"
-                st.session_state.page = "hub"
+                # Έλεγχος Onboarding
+                st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
                 st.rerun()
+
+    # --- NEW PAGE: FIRST TIME USER ONBOARDING ---
+    elif st.session_state.page == "onboarding":
+        st.title("👋 Καλώς ήρθες στο PedaGO!")
+        st.subheader("Ας δημιουργήσουμε το προφίλ του μικρού μας εξερευνητή για πρώτη φορά.")
+        
+        # Καθαρή, οργανωμένη φόρμα συλλογής πρώτων στοιχείων
+        with st.form("onboarding_form"):
+            st.markdown("#### 📝 Στοιχεία Μαθητή")
+            onboard_name = st.text_input("Πώς σε φωνάζουν; (Όνομα Παιδιού):", placeholder="π.χ. Νικόλας")
+            onboard_age = st.number_input("Πόσων χρονών είσαι; (Ηλικία):", min_value=3, max_value=12, value=5)
+            
+            submit_onboarding = st.form_submit_with_rows_cols = st.form_submit_button("🚀 Ξεκινάμε το Ταξίδι!", use_container_width=True)
+            
+            if submit_onboarding:
+                if onboard_name.strip() == "":
+                    st.error("💡 Σε παρακαλώ, συμπλήρωσε το όνομα του παιδιού για να μπορεί ο Φοίβος να του απευθύνεται σωστά!")
+                else:
+                    # Αποθήκευση στοιχείων στο state
+                    st.session_state.user["name"] = onboard_name
+                    st.session_state.user["age"] = onboard_age
+                    st.session_state.user["onboarded"] = True # Σημειώνεται ότι ολοκληρώθηκε
+                    
+                    st.success(f"🎉 Πανέτοιμα! Το προφίλ του/της {onboard_name} δημιουργήθηκε!")
+                    time.sleep(1.5)
+                    st.session_state.page = "hub"
+                    st.rerun()
 
     # --- PAGE: WORLD HUB ---
     elif st.session_state.page == "hub":
@@ -278,7 +309,7 @@ def main():
             
         st.write("### 📈 Καμπύλη Μάθησης (XP Progression)")
         fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#10b981', width=3)))
-        fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεπιδράσεις", yaxis_title="XP")
+        fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεpιδράσεις", yaxis_title="XP")
         st.plotly_chart(fig_xp, use_container_width=True)
         
         st.write("### 🎭 Συναισθηματικό Ιστορικό (Mood Tracker)")
@@ -293,11 +324,4 @@ def main():
         new_age = st.number_input("Ηλικία Παιδιού:", min_value=3, max_value=12, value=st.session_state.user["age"])
         
         if st.button("💾 Αποθήκευση Αλλαγών", use_container_width=True):
-            st.session_state.user["name"] = new_name
-            st.session_state.user["age"] = new_age
-            st.success("Το προφίλ ενημερώθηκε επιτυχώς!")
-            time.sleep(1)
-            st.rerun()
-
-if __name__ == "__main__":
-    main()
+            st.session_state.
