@@ -15,8 +15,8 @@ from streamlit_mic_recorder import speech_to_text
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v3.9"
-    VERSION = "Build 2026.Enterprise"
+    TITLE = "PedaGO Genesis Pro v4.0"
+    VERSION = "Build 2026.Infinite"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια."},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο."},
@@ -81,7 +81,7 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS & DATA MANAGER (EXTENDED)
+# MODULE 4: SAAS & DATA MANAGER
 # =================================================================
 class SessionManager:
     """Διαχείριση Χρήστη, XP, Ιστορικού, Onboarding & Χρονοδιακόπτη"""
@@ -99,8 +99,8 @@ class SessionManager:
                 "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"],
                 "xp_history": [10, 20, 40],
                 "onboarded": False,
-                "usage_count": 0,       # Μετρητής μηνυμάτων για τον χρονοδιακόπτη
-                "max_usage": 3          # Όριο για το Free Plan
+                "usage_count": 0,       
+                "max_usage": 3          
             }
         if "page" not in st.session_state: 
             st.session_state.page = "login"
@@ -113,7 +113,6 @@ class SessionManager:
 
     @staticmethod
     def check_screen_time():
-        """Έλεγχος αν ο χρήστης ξεπέρασε το όριο χρόνου/μηνυμάτων"""
         if st.session_state.user["plan"] == "Free" and st.session_state.user["usage_count"] >= st.session_state.user["max_usage"]:
             return True
         return False
@@ -268,7 +267,6 @@ def main():
         render_hud()
         st.title("🗺️ Διάλεξε τον Κόσμο σου")
         
-        # Έλεγχος Χρονοδιακόπτη (Screen Time)
         if SessionManager.check_screen_time():
             st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το ημερήσιο όριο χρήσης για το Free Plan! Ο Φοίβος πήγε να ξεκουραστεί. Αναβάθμισε σε Pro για απεριόριστο χρόνο.")
             return
@@ -308,7 +306,7 @@ def main():
         user_speech = VoiceEngine.listen()
         if user_speech:
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
-            st.session_state.user["usage_count"] += 1 # Αυξάνουμε τον μετρητή χρήσης
+            st.session_state.user["usage_count"] += 1 
             
             with st.spinner("Ο Φοίβος σε ακούει με προσοχή..."):
                 mood_data = brain.analyze_sentiment(user_speech)
@@ -336,7 +334,6 @@ def main():
         with col_m2:
             st.metric("Τρέχον Επίπεδο", f"Level {st.session_state.user['level']}")
             
-        # ΝΕΟ: Σύστημα Παρασήμων (Achievements)
         st.write("### 🏅 Ψηφιακά Παράσημα (Achievements)")
         badges_col = st.columns(3)
         with badges_col[0]:
@@ -361,14 +358,13 @@ def main():
         st.write("### 🎭 Συναισθηματικό Ιστορικό (Mood Tracker)")
         st.info(f"Η τελευταία καταγεγραμμένη διάθεση του παιδιού είναι: **{st.session_state.user['mood']}**")
 
-    # --- NEW PAGE: EDUCATOR PORTAL (B2B PORTAL) ---
+    # --- PAGE: EDUCATOR PORTAL ---
     elif st.session_state.page == "educator_portal":
         st.title("🏫 Educator Portal (Στατιστικά Τάξης)")
         st.subheader("Συγκεντρωτική εικόνα για τους συνεργαζόμενους Παιδικούς Σταθμούς / Νηπιαγωγεία")
         
         st.info("💡 Αυτό το Dashboard εμφανίζεται στους εκπαιδευτικούς φορείς που αγοράζουν το B2B Enterprise πακέτο μας.")
         
-        # Δημιουργία Mock Data για την τάξη
         class_data = pd.DataFrame({
             'Μαθητής': ['Νικόλας', 'Μαρία', 'Γιώργος', 'Ελένη', 'Δημήτρης'],
             'Εβδομαδιαία XP': [120, 240, 90, 310, 150],
