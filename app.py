@@ -268,7 +268,7 @@ def main():
             
         col1, col2 = st.columns(2)
         with col1:
-            st.info("### Basic Plan\n- 5 Μηνύματα/μέρα\n- Standard AI")
+            st.info("### Basic Plan\n- 3 Μηνύματα/μέρα\n- Standard AI")
             if st.button("Επιλογή Basic", use_container_width=True):
                 st.session_state.user["plan"] = "Free"
                 st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
@@ -276,7 +276,7 @@ def main():
         with col2:
             st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
             
-            stripe_link = "https://buy.stripe.com/5kA6oE736g1Y5JCdQQ"
+            stripe_link = "https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00"
             
             st.markdown(f"""
                 <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
