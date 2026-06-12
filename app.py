@@ -6,7 +6,7 @@ import io
 import time
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from groq import Groq
 from gtts import gTTS
 from streamlit_mic_recorder import speech_to_text
@@ -16,8 +16,8 @@ from streamlit_mic_recorder import speech_to_text
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v5.0"
-    VERSION = "Build 2026.Infinite"
+    TITLE = "PedaGO Genesis Pro v6.0"
+    VERSION = "Build 2026.AnkiCore"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)"},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)"},
@@ -82,25 +82,27 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS & DATA MANAGER (WITH SQL PERSISTENCE)
+# MODULE 4: SAAS & DATA MANAGER (WITH ANKI PERSISTENCE)
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρήστη, SQLite Βάσης, XP, Ιστορικού, Onboarding & Χρονοδιακόπτη"""
+    """Διαχείριση Χρήστη, SQLite Βάσης, XP, Onboarding, Χρονοδιακόπτη & Spaced Repetition"""
     
     @staticmethod
     def init_db():
-        """Αρχικοποίηση Τοπικής Βάσης Δεδομένων SQLite"""
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_profile (
-                id INTEGER PRIMARY KEY,
-                name TEXT,
-                xp INTEGER,
-                level INTEGER,
-                plan TEXT,
-                age INTEGER,
-                onboarded INTEGER
+                id INTEGER PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, plan TEXT, age INTEGER, onboarded INTEGER
+            )
+        """)
+        # ΝΕΟΣ ΠΙΝΑΚΑΣ: Anki Spaced Repetition Cards
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS anki_cards (
+                word TEXT PRIMARY KEY,
+                interval INTEGER,
+                ease_factor REAL,
+                next_review TEXT
             )
         """)
         conn.commit()
@@ -108,7 +110,6 @@ class SessionManager:
 
     @staticmethod
     def save_to_db(user_data):
-        """Αποθήκευση στοιχείων στη SQLite"""
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM user_profile WHERE id = 1")
@@ -121,7 +122,6 @@ class SessionManager:
 
     @staticmethod
     def load_from_db():
-        """Φόρτωση στοιχείων από τη SQLite"""
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         cursor.execute("SELECT name, xp, level, plan, age, onboarded FROM user_profile WHERE id = 1")
@@ -129,21 +129,44 @@ class SessionManager:
         conn.close()
         if row:
             return {
-                "name": row[0],
-                "xp": row[1],
-                "level": row[2],
-                "plan": row[3],
-                "age": row[4],
+                "name": row[0], "xp": row[1], "level": row[2], "plan": row[3], "age": row[4],
                 "onboarded": True if row[5] == 1 else False,
-                "history": [], 
-                "mood": "Ήρεμος",
-                "mood_history": ["Χαρούμενος", "Ήρεμος"],
-                "xp_history": [10, row[1]],
-                "usage_count": 0,       
-                "max_usage": 3,
-                "vocab_bonus": False
+                "history": [], "mood": "Ήρεμος", "mood_history": ["Χαρούμενος", "Ήρεμος"], "xp_history": [10, row[1]],
+                "usage_count": 0, "max_usage": 3, "vocab_bonus": False
             }
         return None
+
+    @staticmethod
+    def update_anki_card(word, quality):
+        """Αλγόριθμος SM-2 (Anki) για τον υπολογισμό της επόμενης επανάληψης"""
+        conn = sqlite3.connect("pedago.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT interval, ease_factor FROM anki_cards WHERE word = ?", (word,))
+        row = cursor.fetchone()
+        
+        if row:
+            interval, ef = row[0], row[1]
+        else:
+            interval, ef = 1, 2.5
+            
+        if quality >= 3:
+            if interval == 1: interval = 2
+            elif interval == 2: interval = 4
+            else: interval = int(interval * ef)
+        else:
+            interval = 1
+            
+        ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+        if ef < 1.3: ef = 1.3
+        
+        next_date = (datetime.now() + timedelta(days=interval)).strftime("%Y-%m-%d %H:%M")
+        
+        cursor.execute("""
+            INSERT OR REPLACE INTO anki_cards (word, interval, ease_factor, next_review)
+            VALUES (?, ?, ?, ?)
+        """, (word, interval, ef, next_date))
+        conn.commit()
+        conn.close()
 
     @staticmethod
     def initialize():
@@ -154,19 +177,9 @@ class SessionManager:
                 st.session_state.user = db_user
             else:
                 st.session_state.user = {
-                    "name": "Ήρωας",
-                    "xp": 40, 
-                    "level": 1, 
-                    "plan": "Free",
-                    "history": [], 
-                    "mood": "Ήρεμος",
-                    "age": 5,
-                    "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"],
-                    "xp_history": [10, 20, 40],
-                    "onboarded": False,
-                    "usage_count": 0,       
-                    "max_usage": 3,
-                    "vocab_bonus": False
+                    "name": "Ήρωας", "xp": 40, "level": 1, "plan": "Free", "history": [], "mood": "Ήρεμος", "age": 5,
+                    "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"], "xp_history": [10, 20, 40],
+                    "onboarded": False, "usage_count": 0, "max_usage": 3, "vocab_bonus": False
                 }
         if "page" not in st.session_state: 
             st.session_state.page = "login"
@@ -208,6 +221,10 @@ def render_sidebar():
         
         if st.sidebar.button("🗺️ Κόσμοι (Hub)", use_container_width=True):
             st.session_state.page = "hub"
+            st.rerun()
+
+        if st.sidebar.button("🧠 Anki Active Recall", use_container_width=True):
+            st.session_state.page = "anki_core"
             st.rerun()
             
         if st.sidebar.button("📊 Dashboard Γονέα", use_container_width=True):
@@ -268,7 +285,7 @@ def main():
             
         col1, col2 = st.columns(2)
         with col1:
-            st.info("### Basic Plan\n- 3 Μηνύματα/μέρα\n- Standard AI")
+            st.info("### Basic Plan\n- 5 Μηνύματα/μέρα\n- Standard AI")
             if st.button("Επιλογή Basic", use_container_width=True):
                 st.session_state.user["plan"] = "Free"
                 st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
@@ -276,7 +293,7 @@ def main():
         with col2:
             st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
             
-            stripe_link = "https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00"
+            stripe_link = "https://buy.stripe.com/5kA6oE736g1Y5JCdQQ"
             
             st.markdown(f"""
                 <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
@@ -324,13 +341,13 @@ def main():
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
                     st.session_state.user["onboarded"] = True
-                    SessionManager.save_to_db(st.session_state.user) # SQL Save
+                    SessionManager.save_to_db(st.session_state.user) 
                     st.success(f"🎉 Πανέτοιμα! Το προφίλ του/της {onboard_name} δημιουργήθηκε!")
                     time.sleep(1.5)
                     st.session_state.page = "hub"
                     st.rerun()
 
-    # --- PAGE: WORLD HUB (UPGRADED UI) ---
+    # --- PAGE: WORLD HUB ---
     elif st.session_state.page == "hub":
         render_hud()
         st.title("🗺️ Διάλεξε τον Κόσμο σου")
@@ -341,7 +358,7 @@ def main():
 
         st.markdown("""
             <div style="background: linear-gradient(135deg, #6366f1, #4f46e5); color:white; padding:15px; border-radius:12px; margin-bottom:20px;">
-                🎯 <b>Vocabulary Challenge:</b> Χρησιμοποίησε τη λέξη <b>"αστέρι"</b> στη συζήτηση με τον Φοίβο και κέρδισε <b>+50 XP Bonus!</b>
+                🎯 <b>Vocabulary Challenge (Anki Linked):</b> Χρησιμοποίησε τη λέξη <b>"αστέρι"</b> στη συζήτηση με τον Φοίβο και κέρδισε <b>+50 XP Bonus!</b>
             </div>
         """, unsafe_allow_html=True)
 
@@ -351,7 +368,7 @@ def main():
                 st.markdown(f"""
                     <div style='background: {data["bg"]}; padding:30px; border-radius:20px; border: 2px solid {data["color"]}; text-align:center; box-shadow: 0 10px 20px rgba(0,0,0,0.2);'>
                         <h2 style='color: white; margin-bottom:15px;'>{data['icon']} {name}</h2>
-                        <p style='color: #cbd5e1; font-size:14px; min-height:40px;'>Έτοιμος για περιπεριπέτεια;</p>
+                        <p style='color: #cbd5e1; font-size:14px; min-height:40px;'>Έτοιμος για περιπέτεια;</p>
                     </div>
                 """, unsafe_allow_html=True)
                 if st.button(f"Είσοδος: {name}", key=name, use_container_width=True):
@@ -359,7 +376,7 @@ def main():
                     st.session_state.page = "adventure"
                     st.rerun()
 
-    # --- PAGE: ADVENTURE (THE HEART + AFFECTIVE AVATAR) ---
+    # --- PAGE: ADVENTURE ---
     elif st.session_state.page == "adventure":
         render_hud()
         
@@ -379,7 +396,6 @@ def main():
                 st.session_state.page = "hub"
                 st.rerun()
         
-        # ΝΕΟ: HCI Mood-Aware Avatar του Φοίβου βασισμένο στο Affective Core
         current_mood = st.session_state.user["mood"].lower()
         avatar_icon = "🧸✨"
         avatar_style = "border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1);"
@@ -405,10 +421,13 @@ def main():
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1 
             
-            if "αστέρι" in user_speech.lower() and not st.session_state.user["vocab_bonus"]:
-                st.session_state.user["vocab_bonus"] = True
-                SessionManager.add_xp(50)
-                st.toast("🎯 Bonus +50 XP! Χρησιμοποίησες τη Λέξη της Ημέρας!", icon="✨")
+            # Ανίχνευση λέξης και live καταχώρηση στον αλγόριθμο Anki
+            if "αστέρι" in user_speech.lower():
+                SessionManager.update_anki_card("αστέρι", 5) # 5 = Άριστη ανάκληση
+                if not st.session_state.user["vocab_bonus"]:
+                    st.session_state.user["vocab_bonus"] = True
+                    SessionManager.add_xp(50)
+                    st.toast("🎯 Anki Recall: Η λέξη 'αστέρι' αποθηκεύτηκε στο Spaced Repetition!", icon="✨")
 
             with st.spinner("Ο Φοίβος σε ακούει με προσοχή..."):
                 mood_data = brain.analyze_sentiment(user_speech)
@@ -425,7 +444,33 @@ def main():
                 VoiceEngine.speak(response)
                 st.rerun()
 
-    # --- PAGE: PARENT DASHBOARD & COGNITIVE RADAR ---
+    # --- NEW PAGE: ANKI ACTIVE RECALL CORE ---
+    elif st.session_state.page == "anki_core":
+        st.title("🧠 Anki Active Recall System")
+        st.subheader("Παρακολούθηση Καμπύλης Λήθης & Διαστημικής Επανάληψης (Spaced Repetition)")
+        
+        st.info("💡 Εδώ εμφανίζονται οι έννοιες και το λεξιλόγιο που το AI καταγράφει live κατά τη διάρκεια του παιχνιδιού, οργανωμένα με βάση τον αλγόριθμο SM-2 του Anki.")
+        
+        conn = sqlite3.connect("pedago.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT word, interval, ease_factor, next_review FROM anki_cards")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if rows:
+            cards_data = pd.DataFrame(rows, columns=['Λέξη / Έννοια', 'Μεσοδιάστημα (Ημέρες)', 'Ease Factor (Anki EF)', 'Επόμενος Έλεγχος Αναφοράς'])
+            st.write("### 🗂️ Ενεργές Κάρτες Μνήμης στο SQL Brain")
+            st.dataframe(cards_data, use_container_width=True)
+            
+            # Οπτικοποίηση Καμπύλης
+            st.write("### 📉 Live Στατιστικά Μνήμης")
+            fig_anki = go.Figure([go.Bar(x=cards_data['Λέξη / Έννοια'], y=cards_data['Μεσοδιάστημα (Ημέρες)'], marker_color='#10b981')])
+            fig_anki.update_layout(title="Ημέρες Διατήρησης στη Μακροπρόθεσμη Μνήμη πριν την Επανάληψη", xaxis_title="Έννοιες", yaxis_title="Ημέρες")
+            st.plotly_chart(fig_anki, use_container_width=True)
+        else:
+            st.warning("🔒 Καμία κάρτα μνήμης δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και χρησιμοποιήστε τη λέξη 'αστέρι' για να δείτε τον αλγόριθμο του Anki να ενεργοποιείται live.")
+
+    # --- PAGE: PARENT DASHBOARD ---
     elif st.session_state.page == "parent_dashboard":
         st.title("📊 Dashboard Γονέα & Analytics")
         st.subheader(f"Συμπεράσματα και Πρόοδος για τον/την: {st.session_state.user['name']}")
@@ -452,25 +497,14 @@ def main():
                 st.code("🔒 Κλειδωμένο\n(Χρειάζεται Level 2)")
 
         st.write("---")
-        
         col_chart1, col_chart2 = st.columns(2)
         
         with col_chart1:
             st.write("### 📊 Παιδαγωγικό Προφίλ Δεξιοτήτων")
             categories = ['Λεξιλόγιο', 'Κριτική Σκέψη', 'Συναισθηματική Αυτορύθμιση', 'Ταχύτητα Απόκρισης', 'Κοινωνική Ενσυναίσθηση']
             fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(
-                r=[4, 3, 5, 4, 4],
-                theta=categories,
-                fill='toself',
-                marker=dict(color='#10b981')
-            ))
-            fig_radar.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
-                showlegend=False,
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
-            )
+            fig_radar.add_trace(go.Scatterpolar(r=[4, 3, 5, 4, 4], theta=categories, fill='toself', marker=dict(color='#10b981')))
+            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig_radar, use_container_width=True)
 
         with col_chart2:
@@ -513,7 +547,7 @@ def main():
         if st.button("💾 Αποθήκευση Αλλαγών", use_container_width=True):
             st.session_state.user["name"] = new_name
             st.session_state.user["age"] = new_age
-            SessionManager.save_to_db(st.session_state.user) # SQL Update
+            SessionManager.save_to_db(st.session_state.user) 
             st.success("Το προφίλ ενημερώθηκε επιτυχώς στη μόνιμη βάση!")
             time.sleep(1)
             st.rerun()
