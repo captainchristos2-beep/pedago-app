@@ -16,8 +16,8 @@ from streamlit_mic_recorder import speech_to_text
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v6.0"
-    VERSION = "Build 2026.AnkiCore"
+    TITLE = "PedaGO Genesis Pro v6.1"
+    VERSION = "Build 2026.MemoryCore"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)"},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)"},
@@ -82,10 +82,10 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS & DATA MANAGER (WITH ANKI PERSISTENCE)
+# MODULE 4: SAAS & DATA MANAGER (WITH MEMORY PERSISTENCE)
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρήστη, SQLite Βάσης, XP, Onboarding, Χρονοδιακόπτη & Spaced Repetition"""
+    """Διαχείριση Χρήστη, SQLite Βάσης, XP, Onboarding, Χρονοδιακόπτη & Καμπύλης Μνήμης"""
     
     @staticmethod
     def init_db():
@@ -96,9 +96,9 @@ class SessionManager:
                 id INTEGER PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, plan TEXT, age INTEGER, onboarded INTEGER
             )
         """)
-        # ΝΕΟΣ ΠΙΝΑΚΑΣ: Anki Spaced Repetition Cards
+        # Πίνακας για τη Γλωσσική Μνήμη (Spaced Repetition)
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS anki_cards (
+            CREATE TABLE IF NOT EXISTS word_memory (
                 word TEXT PRIMARY KEY,
                 interval INTEGER,
                 ease_factor REAL,
@@ -137,11 +137,11 @@ class SessionManager:
         return None
 
     @staticmethod
-    def update_anki_card(word, quality):
-        """Αλγόριθμος SM-2 (Anki) για τον υπολογισμό της επόμενης επανάληψης"""
+    def update_word_memory(word, quality):
+        """Υπολογισμός μεσοδιαστήματος επανάληψης βάσει αλγορίθμου καμπύλης λήθης"""
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT interval, ease_factor FROM anki_cards WHERE word = ?", (word,))
+        cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE word = ?", (word,))
         row = cursor.fetchone()
         
         if row:
@@ -162,7 +162,7 @@ class SessionManager:
         next_date = (datetime.now() + timedelta(days=interval)).strftime("%Y-%m-%d %H:%M")
         
         cursor.execute("""
-            INSERT OR REPLACE INTO anki_cards (word, interval, ease_factor, next_review)
+            INSERT OR REPLACE INTO word_memory (word, interval, ease_factor, next_review)
             VALUES (?, ?, ?, ?)
         """, (word, interval, ef, next_date))
         conn.commit()
@@ -223,8 +223,8 @@ def render_sidebar():
             st.session_state.page = "hub"
             st.rerun()
 
-        if st.sidebar.button("🧠 Anki Active Recall", use_container_width=True):
-            st.session_state.page = "anki_core"
+        if st.sidebar.button("🧠 Γλωσσική Μνήμη", use_container_width=True):
+            st.session_state.page = "memory_core"
             st.rerun()
             
         if st.sidebar.button("📊 Dashboard Γονέα", use_container_width=True):
@@ -358,7 +358,7 @@ def main():
 
         st.markdown("""
             <div style="background: linear-gradient(135deg, #6366f1, #4f46e5); color:white; padding:15px; border-radius:12px; margin-bottom:20px;">
-                🎯 <b>Vocabulary Challenge (Anki Linked):</b> Χρησιμοποίησε τη λέξη <b>"αστέρι"</b> στη συζήτηση με τον Φοίβο και κέρδισε <b>+50 XP Bonus!</b>
+                🎯 <b>Vocabulary Challenge:</b> Χρησιμοποίησε τη λέξη <b>"αστέρι"</b> στη συζήτηση με τον Φοίβο και κέρδισε <b>+50 XP Bonus!</b>
             </div>
         """, unsafe_allow_html=True)
 
@@ -421,13 +421,13 @@ def main():
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1 
             
-            # Ανίχνευση λέξης και live καταχώρηση στον αλγόριθμο Anki
+            # Ανίχνευση λέξης και live καταχώρηση στη βάση της γλωσσικής μνήμης
             if "αστέρι" in user_speech.lower():
-                SessionManager.update_anki_card("αστέρι", 5) # 5 = Άριστη ανάκληση
+                SessionManager.update_word_memory("αστέρι", 5) 
                 if not st.session_state.user["vocab_bonus"]:
                     st.session_state.user["vocab_bonus"] = True
                     SessionManager.add_xp(50)
-                    st.toast("🎯 Anki Recall: Η λέξη 'αστέρι' αποθηκεύτηκε στο Spaced Repetition!", icon="✨")
+                    st.toast("🎯 Γλωσσική Μνήμη: Η λέξη 'αστέρι' αποθηκεύτηκε στο σύστημα επανάληψης!", icon="✨")
 
             with st.spinner("Ο Φοίβος σε ακούει με προσοχή..."):
                 mood_data = brain.analyze_sentiment(user_speech)
@@ -444,31 +444,30 @@ def main():
                 VoiceEngine.speak(response)
                 st.rerun()
 
-    # --- NEW PAGE: ANKI ACTIVE RECALL CORE ---
-    elif st.session_state.page == "anki_core":
-        st.title("🧠 Anki Active Recall System")
+    # --- PAGE: LANGUAGE MEMORY CORE ---
+    elif st.session_state.page == "memory_core":
+        st.title("🧠 Σύστημα Γλωσσικής Μνήμης")
         st.subheader("Παρακολούθηση Καμπύλης Λήθης & Διαστημικής Επανάληψης (Spaced Repetition)")
         
-        st.info("💡 Εδώ εμφανίζονται οι έννοιες και το λεξιλόγιο που το AI καταγράφει live κατά τη διάρκεια του παιχνιδιού, οργανωμένα με βάση τον αλγόριθμο SM-2 του Anki.")
+        st.info("💡 Εδώ εμφανίζονται οι έννοιες και το λεξιλόγιο που το AI καταγράφει live κατά τη διάρκεια του παιχνιδιού, οργανωμένα με βάση τη συχνότητα και την ποιότητα ανάκλησης.")
         
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT word, interval, ease_factor, next_review FROM anki_cards")
+        cursor.execute("SELECT word, interval, ease_factor, next_review FROM word_memory")
         rows = cursor.fetchall()
         conn.close()
         
         if rows:
-            cards_data = pd.DataFrame(rows, columns=['Λέξη / Έννοια', 'Μεσοδιάστημα (Ημέρες)', 'Ease Factor (Anki EF)', 'Επόμενος Έλεγχος Αναφοράς'])
-            st.write("### 🗂️ Ενεργές Κάρτες Μνήμης στο SQL Brain")
+            cards_data = pd.DataFrame(rows, columns=['Λέξη / Έννοια', 'Μεσοδιάστημα (Ημέρες)', 'Συντελεστής Ευκολίας (Ease Factor)', 'Επόμενος Έλεγχος Αναφοράς'])
+            st.write("### 🗂️ Ενεργές Έννοιες στο SQL Brain")
             st.dataframe(cards_data, use_container_width=True)
             
-            # Οπτικοποίηση Καμπύλης
             st.write("### 📉 Live Στατιστικά Μνήμης")
             fig_anki = go.Figure([go.Bar(x=cards_data['Λέξη / Έννοια'], y=cards_data['Μεσοδιάστημα (Ημέρες)'], marker_color='#10b981')])
             fig_anki.update_layout(title="Ημέρες Διατήρησης στη Μακροπρόθεσμη Μνήμη πριν την Επανάληψη", xaxis_title="Έννοιες", yaxis_title="Ημέρες")
             st.plotly_chart(fig_anki, use_container_width=True)
         else:
-            st.warning("🔒 Καμία κάρτα μνήμης δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και χρησιμοποιήστε τη λέξη 'αστέρι' για να δείτε τον αλγόριθμο του Anki να ενεργοποιείται live.")
+            st.warning("🔒 Καμία έννοια δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και χρησιμοποιήστε τη λέξη 'αστέρι' για να δείτε τον αλγόριθμο της γλωσσικής μνήμης να ενεργοποιείται live.")
 
     # --- PAGE: PARENT DASHBOARD ---
     elif st.session_state.page == "parent_dashboard":
