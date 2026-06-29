@@ -12,17 +12,40 @@ from gtts import gTTS
 from streamlit_mic_recorder import speech_to_text
 
 # =================================================================
-# MODULE 1: GLOBAL CONFIGURATION & THEMES
+# MODULE 1: GLOBAL CONFIGURATION, THEMES & CSS INJECTION
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v6.1"
-    VERSION = "Build 2026.MemoryCore"
+    TITLE = "PedaGO Genesis Pro v7.0"
+    VERSION = "Build 2026.EnterpriseCore"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)"},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)"},
         "Διάστημα": {"color": "#6366f1", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες και εξερεύνηση.", "bg": "linear-gradient(135deg, #1e1b4b, #0f172a)"}
     }
+
+    @staticmethod
+    def inject_premium_styles():
+        """Έγχυση CSS για Native App Αίσθηση"""
+        st.markdown("""
+            <style>
+            .stApp { background-color: #0f172a; color: #f8fafc; }
+            .premium-card {
+                background: linear-gradient(135deg, #1e293b, #0f172a);
+                padding: 24px;
+                border-radius: 16px;
+                border: 1px solid #334155;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+                margin-bottom: 20px;
+            }
+            .animated-gradient-text {
+                background: linear-gradient(135deg, #60a5fa, #34d399);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                font-weight: 800;
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
 # =================================================================
 # MODULE 2: VOICE & AUDIO ENGINE (STT / TTS)
@@ -53,10 +76,10 @@ class VoiceEngine:
         )
 
 # =================================================================
-# MODULE 3: AFFECTIVE AI CORE (THE BRAIN)
+# MODULE 3: AFFECTIVE & ADAPTIVE AI CORE (THE BRAIN)
 # =================================================================
 class PhoebusBrain:
-    """Η Καρδιά του Φοίβου με Συναισθηματική Νοημοσύνη"""
+    """Η Καρδιά του Φοίβου με Συναισθηματική & Ηλικιακή Νοημοσύνη"""
     def __init__(self):
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
@@ -70,8 +93,10 @@ class PhoebusBrain:
         )
         return json.loads(response.choices[0].message.content)
 
-    def generate_response(self, history, mood_context, world_prompt):
-        full_prompt = f"{world_prompt}. Το παιδί νιώθει {mood_context['mood']}. Προσάρμοσε τον τόνο σου ακαδημαϊκά και παιδαγωγικά."
+    def generate_response(self, history, mood_context, world_prompt, child_age):
+        age_instruction = "Το παιδί είναι προ-νήπιο (4 ετών), χρησιμοποίησε πολύ απλές, μικρές προτάσεις έως 5 λέξεις." if child_age <= 4 else "Το παιδί είναι νήπιο (5-6 ετών), ενθάρρυνε σύνθετες απαντήσεις και κριτική σκέψη."
+        
+        full_prompt = f"{world_prompt}. Το παιδί νιώθει {mood_context['mood']}. {age_instruction} Προσάρμοσε τον τόνο σου ακαδημαϊκά και παιδαγωγικά."
         messages = [{"role": "system", "content": full_prompt}] + history
         
         response = self.client.chat.completions.create(
@@ -82,7 +107,7 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS & DATA MANAGER (WITH MEMORY PERSISTENCE)
+# MODULE 4: SAAS & DATA MANAGER (WITH PERSISTENCE)
 # =================================================================
 class SessionManager:
     """Διαχείριση Χρήστη, SQLite Βάσης, XP, Onboarding, Χρονοδιακόπτη & Καμπύλης Μνήμης"""
@@ -96,13 +121,9 @@ class SessionManager:
                 id INTEGER PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, plan TEXT, age INTEGER, onboarded INTEGER
             )
         """)
-        # Πίνακας για τη Γλωσσική Μνήμη (Spaced Repetition)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS word_memory (
-                word TEXT PRIMARY KEY,
-                interval INTEGER,
-                ease_factor REAL,
-                next_review TEXT
+                word TEXT PRIMARY KEY, interval INTEGER, ease_factor REAL, next_review TEXT
             )
         """)
         conn.commit()
@@ -138,7 +159,6 @@ class SessionManager:
 
     @staticmethod
     def update_word_memory(word, quality):
-        """Υπολογισμός μεσοδιαστήματος επανάληψης βάσει αλγορίθμου καμπύλης λήθης"""
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE word = ?", (word,))
@@ -209,6 +229,7 @@ def render_hud():
             <span style="font-size:14px; margin-left:12px; margin-right:12px;">🏆 <b>Επίπεδο:</b> {st.session_state.user['level']}</span> | 
             <span style="font-size:14px; margin-left:12px; margin-right:12px;">🎭 <b>Διάθεση:</b> {st.session_state.user['mood']}</span> | 
             <span style="font-size:14px; margin-left:12px; margin-right:12px;">⏳ <b>Μηνύματα:</b> {remaining}</span> |
+            <span style="font-size:14px; margin-left:12px; margin-right:12px;">👶 <b>Ηλικία:</b> {st.session_state.user['age']} ετών</span> |
             <span style="font-size:14px; margin-left:12px;">💎 <b>Πλάνο:</b> <span style="color:#10b981; font-weight:bold;">{st.session_state.user['plan']}</span></span>
         </div>
     """, unsafe_allow_html=True)
@@ -248,7 +269,7 @@ def render_sidebar():
             st.rerun()
 
 def main():
-    st.set_page_config(page_title=AppConfig.TITLE, page_icon="🚀", layout="wide")
+    AppConfig.inject_premium_styles()
     SessionManager.initialize()
     render_sidebar()
     brain = PhoebusBrain()
@@ -293,7 +314,7 @@ def main():
         with col2:
             st.success("### Pro Plan\n- Απεριόριστη Φωνή\n- Affective AI Analytics")
             
-            stripe_link = "https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00"
+            stripe_link = "https://buy.stripe.com/5kA6oE736g1Y5JCdQQ"
             
             st.markdown(f"""
                 <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
@@ -413,6 +434,9 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
+        # Υποδομή Υβριδικής Μάθησης (BeeBot Hub Bridge Option)
+        st.caption("🤖 Προαιρετική Σύνδεση με Εκπαιδευτική Ρομποτική (BeeBot Mod Active)")
+
         for msg in st.session_state.user["history"]:
             with st.chat_message(msg["role"]): st.write(msg["content"])
 
@@ -421,7 +445,6 @@ def main():
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1 
             
-            # Ανίχνευση λέξης και live καταχώρηση στη βάση της γλωσσικής μνήμης
             if "αστέρι" in user_speech.lower():
                 SessionManager.update_word_memory("αστέρι", 5) 
                 if not st.session_state.user["vocab_bonus"]:
@@ -437,7 +460,8 @@ def main():
                 response = brain.generate_response(
                     st.session_state.user["history"], 
                     mood_data, 
-                    AppConfig.THEMES[world]["prompt"]
+                    AppConfig.THEMES[world]["prompt"],
+                    st.session_state.user["age"]
                 )
                 st.session_state.user["history"].append({"role": "assistant", "content": response})
                 SessionManager.add_xp(20)
@@ -469,7 +493,7 @@ def main():
         else:
             st.warning("🔒 Καμία έννοια δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και χρησιμοποιήστε τη λέξη 'αστέρι' για να δείτε τον αλγόριθμο της γλωσσικής μνήμης να ενεργοποιείται live.")
 
-    # --- PAGE: PARENT DASHBOARD ---
+    # --- PAGE: PARENT DASHBOARD (UPGRADED RADAR CHART) ---
     elif st.session_state.page == "parent_dashboard":
         st.title("📊 Dashboard Γονέα & Analytics")
         st.subheader(f"Συμπεράσματα και Πρόοδος για τον/την: {st.session_state.user['name']}")
@@ -500,9 +524,16 @@ def main():
         
         with col_chart1:
             st.write("### 📊 Παιδαγωγικό Προφίλ Δεξιοτήτων")
+            # ΝΕΟ: Εμπλουτισμένο Radar Chart Γνωστικής Ανάπτυξης
             categories = ['Λεξιλόγιο', 'Κριτική Σκέψη', 'Συναισθηματική Αυτορύθμιση', 'Ταχύτητα Απόκρισης', 'Κοινωνική Ενσυναίσθηση']
             fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(r=[4, 3, 5, 4, 4], theta=categories, fill='toself', marker=dict(color='#10b981')))
+            fig_radar.add_trace(go.Scatterpolar(
+                r=[4, 3, 5, 4, 4], 
+                theta=categories, 
+                fill='toself', 
+                marker=dict(color='#6366f1'),
+                fillcolor='rgba(99, 102, 241, 0.3)'
+            ))
             fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig_radar, use_container_width=True)
 
@@ -520,7 +551,7 @@ def main():
         st.title("🏫 Educator Portal (Στατιστικά Τάξης)")
         st.subheader("Συγκεντρωτική εικόνα για τους συνεργαζόμενους Παιδικούς Σταθμούς / Νηπιαγωγεία")
         
-        st.info("💡 Αυτό το Dashboard εμφανίζεται στους εκπαιδευτικούς φορείς που αγοράζουν το B2B Enterprise πακέτο μας.")
+        st.info("💡 Αυτό το Dashboard εμφανίζεται στους εκπαιδευτικούς φορείς που αγοράζουν το B2B Enterprise πακέτο μας. (Συμβατότητα e-me API Ανιχνεύσιμη)")
         
         class_data = pd.DataFrame({
             'Μαθητής': ['Νικόλας', 'Μαρία', 'Γιώργος', 'Ελένη', 'Δημήτρης'],
