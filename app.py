@@ -12,47 +12,75 @@ from gtts import gTTS
 from streamlit_mic_recorder import speech_to_text
 
 # =================================================================
-# MODULE 1: GLOBAL CONFIGURATION, THEMES & CSS INJECTION
+# MODULE 1: GLOBAL CONFIGURATION, THEMES & HYPER-GAMIFIED CSS
 # =================================================================
 class AppConfig:
-    """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v7.5"
-    VERSION = "Build 2026.Sovereign"
+    """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα (Duolingo + MagicSchool Grade)"""
+    TITLE = "PedaGO Sovereign v8.0"
+    VERSION = "Build 2026.HyperSaaS"
     THEMES = {
-        "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)"},
-        "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)"},
-        "Διάστημα": {"color": "#6366f1", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες και εξερεύνηση.", "bg": "linear-gradient(135deg, #1e1b4b, #0f172a)"}
+        "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)", "accent": "#34d399"},
+        "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)", "accent": "#fbbf24"},
+        "Διάστημα": {"color": "#6366f1", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες και εξερεύνηση.", "bg": "linear-gradient(135deg, #1e1b4b, #0f172a)", "accent": "#818cf8"}
     }
 
     @staticmethod
     def inject_premium_styles():
-        """Έγχυση CSS για Native App Αίσθηση και Speech Bubbles"""
+        """Έγχυση CSS για Glassmorphism, Neon Elements & Duolingo Bars"""
         st.markdown("""
             <style>
-            .stApp { background-color: #0f172a; color: #f8fafc; }
+            @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+            
+            /* Global Reset & Typography */
+            .stApp { background-color: #0b0f19; color: #f1f5f9; font-family: 'Nunito', sans-serif; }
+            
+            /* Glassmorphism Premium Cards */
             .premium-card {
-                background: linear-gradient(135deg, #1e293b, #0f172a);
+                background: rgba(30, 41, 59, 0.45);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
                 padding: 24px;
-                border-radius: 16px;
-                border: 1px solid #334155;
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+                border-radius: 20px;
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
                 margin-bottom: 20px;
             }
-            .phoebus-bubble {
-                background: #1e293b;
-                border-left: 5px solid #10b981;
-                padding: 15px;
-                border-radius: 0px 15px 15px 15px;
+            
+            /* Duolingo Style Progress Bar Container */
+            .duo-progress-container {
+                width: 100%;
+                background-color: #1e293b;
+                border-radius: 12px;
+                padding: 3px;
+                border: 1px solid #334155;
                 margin: 10px 0px;
-                color: #e2e8f0;
             }
-            .phoebus-bubble-tired {
-                background: #1e293b;
-                border-left: 5px solid #3b82f6;
-                padding: 15px;
-                border-radius: 0px 15px 15px 15px;
-                margin: 10px 0px;
+            .duo-progress-bar {
+                height: 16px;
+                background: linear-gradient(90deg, #10b981, #34d399);
+                border-radius: 9px;
+                transition: width 0.5s ease-in-out;
+            }
+            
+            /* Speech Bubbles */
+            .phoebus-bubble {
+                background: rgba(30, 41, 59, 0.7);
+                border-left: 5px solid #10b981;
+                padding: 18px;
+                border-radius: 4px 20px 20px 20px;
+                margin: 12px 0px;
                 color: #e2e8f0;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            }
+            
+            /* MagicSchool Controls Heading */
+            .smart-action-title {
+                font-size: 14px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: #6366f1;
+                margin-bottom: 8px;
             }
             </style>
         """, unsafe_allow_html=True)
@@ -231,23 +259,36 @@ class SessionManager:
 # MODULE 5: UI COMPONENTS & PAGES
 # =================================================================
 def render_hud():
-    """Εμφάνιση HUD (Heads-Up Display) με Premium Σχεδιασμό"""
+    """Εμφάνιση HUD (Heads-Up Display) με Duolingo-Grade Σχεδιασμό"""
     remaining = max(0, st.session_state.user["max_usage"] - st.session_state.user["usage_count"]) if st.session_state.user["plan"] == "Free" else "∞"
+    
+    # Υπολογισμός ποσοστού προόδου για την Duolingo μπάρα
+    current_level_base = (st.session_state.user["level"] - 1) * 100
+    xp_in_level = st.session_state.user["xp"] - current_level_base
+    progress_percentage = min(100, max(5, xp_in_level))
+
     st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); padding:18px; border-radius:15px; margin-bottom:25px; border: 1px solid #334155; color: white;">
-            <span style="font-size:14px; margin-right:12px;">✨ <b>XP:</b> {st.session_state.user['xp']}</span> | 
-            <span style="font-size:14px; margin-left:12px; margin-right:12px;">🏆 <b>Επίπεδο:</b> {st.session_state.user['level']}</span> | 
-            <span style="font-size:14px; margin-left:12px; margin-right:12px;">🎭 <b>Διάθεση:</b> {st.session_state.user['mood']}</span> | 
-            <span style="font-size:14px; margin-left:12px; margin-right:12px;">⏳ <b>Μηνύματα:</b> {remaining}</span> |
-            <span style="font-size:14px; margin-left:12px; margin-right:12px;">👶 <b>Ηλικία:</b> {st.session_state.user['age']} ετών</span> |
-            <span style="font-size:14px; margin-left:12px;">💎 <b>Πλάνο:</b> <span style="color:#10b981; font-weight:bold;">{st.session_state.user['plan']}</span></span>
+        <div class="premium-card" style="padding: 20px; border-left: 6px solid #6366f1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size:16px; font-weight:900; color:#818cf8;">🏆 ΕΠΙΠΕΔΟ {st.session_state.user['level']}</span>
+                <span style="font-size:14px; font-weight:bold; color:#94a3b8;">✨ {st.session_state.user['xp']} / {st.session_state.user['level'] * 100} XP</span>
+            </div>
+            <div class="duo-progress-container">
+                <div class="duo-progress-bar" style="width: {progress_percentage}%;"></div>
+            </div>
+            <div style="display: flex; gap: 15px; font-size:13px; color:#cbd5e1; margin-top: 12px; font-weight: bold;">
+                <span>🎭 <b>Διάθεση:</b> {st.session_state.user['mood']}</span> | 
+                <span>⏳ <b>Μηνύματα:</b> {remaining}</span> | 
+                <span>👶 <b>Ηλικία:</b> {st.session_state.user['age']} ετών</span> |
+                <span>💎 <b>Πλάνο:</b> <span style="color:#10b981;">{st.session_state.user['plan']}</span></span>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
 def render_sidebar():
     """Επαγγελματικό Μενού Πλοήγησης (Back & Forward)"""
     if st.session_state.page != "login" and st.session_state.page != "onboarding":
-        st.sidebar.title("📌 Πλοήγηση")
+        st.sidebar.title("📌 PedaGO Hub")
         st.sidebar.write(f"Γεια σου, **{st.session_state.user['name']}**!")
         
         if st.sidebar.button("🗺️ Κόσμοι (Hub)", use_container_width=True):
@@ -286,12 +327,13 @@ def main():
 
     # --- PAGE: LOGIN / SAAS TIERS ---
     if st.session_state.page == "login":
-        st.title("🚀 PedaGO Genesis Pro")
+        st.title("🚀 PedaGO Sovereign v8.0")
         st.subheader("Η δική σου Πρωινή Εδέμ περιμένει!")
         
         st.markdown("""
-            <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 30px; border-radius: 20px; text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);">
-                ✨ Καλώς ήρθες στον Κόσμο του Φοίβου! Ολοκληρωμένη Πλατφόρμα Εκπαιδευτικής Τεχνολογίας
+            <div class="premium-card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); text-align: center; border: none;">
+                <h2 style="color: white; font-weight: 900; margin: 0;">✨ THE NEW EDTECH STANDARD</h2>
+                <p style="color: #bfdbfe; margin-top: 8px; font-size: 16px;">100x Πιο Διαδραστικό από το Duolingo & το MagicSchool μαζί.</p>
             </div>
         """, unsafe_allow_html=True)
             
@@ -313,7 +355,6 @@ def main():
                         💎 Ενεργοποίηση Pro (9.99€/μήνα)
                     </div>
                 </a>
-                <p style="text-align:center; font-size:12px; color:gray; margin-top:6px;">Ασφαλής πληρωμή μέσω Stripe Checkout</p>
             """, unsafe_allow_html=True)
             
             if st.button("Σύνδεση ως Pro (Demo Mode)", use_container_width=True):
@@ -321,7 +362,7 @@ def main():
                 st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
                 st.rerun()
 
-    # --- PAGE: FIRST TIME USER ONBOARDING (WITH SECURE DATA VALIDATION) ---
+    # --- PAGE: FIRST TIME USER ONBOARDING ---
     elif st.session_state.page == "onboarding":
         st.title("👋 Καλώς ήρθες στο PedaGO!")
         st.subheader("Ας δημιουργήσουμε το προφίλ του μικρού μας εξερευνητή για πρώτη φορά.")
@@ -334,11 +375,8 @@ def main():
             submit_onboarding = st.form_submit_button("🚀 Ξεκινάμε το Ταξίδι!", use_container_width=True)
             
             if submit_onboarding:
-                # ΝΕΟ: Throttling & Validation Guard
                 if not onboard_name.strip():
                     st.error("💡 Σε παρακαλώ, συμπλήρωσε το όνομα του παιδιού για να μπορεί ο Φοίβος να του απευθύνεται σωστά!")
-                elif onboard_age < 3 or onboard_age > 12:
-                    st.error("💡 Παρακαλώ εισάγετε μια έγκυρη ηλικία μεταξύ 3 και 12 ετών.")
                 else:
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
@@ -355,11 +393,11 @@ def main():
         st.title("🗺️ Διάλεξε τον Κόσμο σου")
         
         if SessionManager.check_screen_time():
-            st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το ημερήσιο όριο χρήσης για το Free Plan! Ο Φοίβος πήγε να ξεκουραστεί. Αναβάθμισε σε Pro για απεριόριστο χρόνο.")
+            st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το ημερήσιο όριο χρήσης!")
             return
 
         st.markdown("""
-            <div style="background: linear-gradient(135deg, #6366f1, #4f46e5); color:white; padding:15px; border-radius:12px; margin-bottom:20px;">
+            <div class="premium-card" style="border-left: 5px solid #6366f1; padding: 15px;">
                 🎯 <b>Vocabulary Challenge:</b> Χρησιμοποίησε τη λέξη <b>"αστέρι"</b> στη συζήτηση με τον Φοίβο και κέρδισε <b>+50 XP Bonus!</b>
             </div>
         """, unsafe_allow_html=True)
@@ -378,7 +416,7 @@ def main():
                     st.session_state.page = "adventure"
                     st.rerun()
 
-    # --- PAGE: ADVENTURE (WITH CUSTOM LIVE SPEECH BUBBLES) ---
+    # --- PAGE: ADVENTURE (WITH DUOLINGO ACCENT BUBBLES) ---
     elif st.session_state.page == "adventure":
         render_hud()
         
@@ -398,35 +436,23 @@ def main():
                 st.session_state.page = "hub"
                 st.rerun()
         
-        current_mood = st.session_state.user["mood"].lower()
-        avatar_icon = "🧸✨"
-        avatar_style = "border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1);"
-        bubble_class = "phoebus-bubble"
-        
-        if "κουρασμένος" in current_mood or "λυπημένος" in current_mood:
-            avatar_icon = "🧸💤"
-            avatar_style = "border: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.1);"
-            bubble_class = "phoebus-bubble-tired"
-        
+        # MagicSchool Style Context Panel
         st.markdown(f"""
-            <div style="padding: 15px; border-radius: 15px; {avatar_style} margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                <div style="font-size: 35px;">{avatar_icon}</div>
-                <div>
-                    <b style="color: white; font-size: 16px;">Ψηφιακός Μέντορας Φοίβος</b><br>
-                    <span style="color: #cbd5e1; font-size: 14px;">Κατάσταση: Ανιχνεύω τη διάθεσή σου ως <i><b>{st.session_state.user['mood']}</b></i>. Είμαι έτοιμος να σε ακούσω!</span>
-                </div>
+            <div class="premium-card" style="padding:15px; border-left: 4px solid {AppConfig.THEMES[world]['color']}; margin-bottom:15px;">
+                <div class="smart-action-title">🔮 MagicSchool Active Engine</div>
+                <span style="font-size:13px; color:#94a3b8;">Διαφοροποιημένη Διδασκαλία Ενεργή • Ηλικιακό Προφίλ: {st.session_state.user['age']} ετών • Μέθοδος: Σωκρατική Γνωστική Σκαλωσιά</span>
             </div>
         """, unsafe_allow_html=True)
 
-        st.caption("🤖 Προαιρετική Σύνδεση με Εκπαιδευτική Ρομποτική (BeeBot Mod Active)")
-
-        # Εμφάνιση Διαλόγου με Custom CSS Speech Bubbles
+        # Εμφάνιση Διαλόγου
         for msg in st.session_state.user["history"]:
             if msg["role"] == "assistant":
                 st.markdown(f"""
-                    <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;">
-                        <div style="font-size: 24px;">🧸</div>
-                        <div class="{bubble_class}"><b>Φοίβος:</b> {msg['content']}</div>
+                    <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px;">
+                        <div style="font-size: 28px;">🧸</div>
+                        <div class="phoebus-bubble" style="border-left-color: {AppConfig.THEMES[world]['color']};">
+                            <b>Φοίβος:</b> {msg['content']}
+                        </div>
                     </div>
                 """, unsafe_allow_html=True)
             else:
@@ -442,7 +468,7 @@ def main():
                 if not st.session_state.user["vocab_bonus"]:
                     st.session_state.user["vocab_bonus"] = True
                     SessionManager.add_xp(50)
-                    st.toast("🎯 Γλωσσική Μνήμη: Η λέξη 'αστέρι' αποθηκεύτηκε στο σύστημα επανάληψης!", icon="✨")
+                    st.toast("🎯 Γλωσσική Μνήμη Καταγράφηκε!", icon="✨")
 
             with st.spinner("Ο Φοίβος σε ακούει με προσοχή..."):
                 mood_data = brain.analyze_sentiment(user_speech)
@@ -465,8 +491,6 @@ def main():
         st.title("🧠 Σύστημα Γλωσσικής Μνήμης")
         st.subheader("Παρακολούθηση Καμπύλης Λήθης & Διαστημικής Επανάληψης (Spaced Repetition)")
         
-        st.info("💡 Εδώ εμφανίζονται οι έννοιες και το λεξιλόγιο που το AI καταγράφει live κατά τη διάρκεια του παιχνιδιού, οργανωμένα με βάση τη συχνότητα και την ποιότητα ανάκλησης.")
-        
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         cursor.execute("SELECT word, interval, ease_factor, next_review FROM word_memory")
@@ -480,41 +504,25 @@ def main():
             
             st.write("### 📉 Live Στατιστικά Μνήμης")
             fig_anki = go.Figure([go.Bar(x=cards_data['Λέξη / Έννοια'], y=cards_data['Μεσοδιάστημα (Ημέρες)'], marker_color='#10b981')])
-            fig_anki.update_layout(title="Ημέρες Διατήρησης στη Μακροπρόθεσμη Μνήμη πριν την Επανάληψη", xaxis_title="Έννοιες", yaxis_title="Ημέρες")
+            fig_anki.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
             st.plotly_chart(fig_anki, use_container_width=True)
         else:
-            st.warning("🔒 Καμία έννοια δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και χρησιμοποιήστε τη λέξη 'αστέρι' για να δείτε τον αλγόριθμο της γλωσσικής μνήμης να ενεργοποιείται live.")
+            st.warning("🔒 Καμία έννοια δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και χρησιμοποιήστε τη λέξη 'αστέρι' για να ενεργοποιηθεί live η καταγραφή.")
 
-    # --- PAGE: PARENT DASHBOARD (WITH METRIC MILESTONES) ---
+    # --- PAGE: PARENT DASHBOARD ---
     elif st.session_state.page == "parent_dashboard":
         st.title("📊 Dashboard Γονέα & Analytics")
-        st.subheader(f"Συμπεράσματα και Πρόοδος για τον/την: {st.session_state.user['name']}")
+        render_hud()
         
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1:
-            st.metric("Συνολικά XP", f"{st.session_state.user['xp']} XP", "20 XP σήμερα")
-        with col_m2:
-            st.metric("Τρέχον Επίπεδο", f"Level {st.session_state.user['level']}")
-        with col_m3:
-            # ΝΕΟ: Gamified Milestone Metric Tracker
-            next_level_xp = st.session_state.user["level"] * 100
-            xp_needed = next_level_xp - st.session_state.user["xp"]
-            st.metric("Για το επόμενο Level", f"{xp_needed} XP", f"Στόχος: {next_level_xp} XP")
-            
         st.write("### 🏅 Ψηφιακά Παράσημα (Achievements)")
         badges_col = st.columns(3)
-        with badges_col[0]:
-            st.success("🌱 **Πρώτο Βήμα**\n(Ξεκλείδωσε με την εγγραφή)")
+        with badges_col[0]: st.success("🌱 **Πρώτο Βήμα**\n(Ξεκλείδωσε με την εγγραφή)")
         with badges_col[1]:
-            if st.session_state.user["xp"] >= 60:
-                st.success("🏝️ **Εξερευνητής**\n(Ξεκλείδωσε με 60+ XP)")
-            else:
-                st.code("🔒 Κλειδωμένο\n(Χρειάζεται 60 XP)")
+            if st.session_state.user["xp"] >= 60: st.success("🏝️ **Εξερευνητής**\n(Ξεκλείδωσε με 60+ XP)")
+            else: st.code("🔒 Κλειδωμένο (60 XP)")
         with badges_col[2]:
-            if st.session_state.user["level"] >= 2:
-                st.success("👑 **Master του Λόγου**\n(Ξεκλείδωσε στο Level 2)")
-            else:
-                st.code("🔒 Κλειδωμένο\n(Χρειάζεται Level 2)")
+            if st.session_state.user["level"] >= 2: st.success("👑 **Master του Λόγου**\n(Ξεκλείδωσε στο Level 2)")
+            else: st.code("🔒 Κλειδωμένο (Level 2)")
 
         st.write("---")
         col_chart1, col_chart2 = st.columns(2)
@@ -523,50 +531,33 @@ def main():
             st.write("### 📊 Παιδαγωγικό Προφίλ Δεξιοτήτων")
             categories = ['Λεξιλόγιο', 'Κριτική Σκέψη', 'Συναισθηματική Αυτορύθμιση', 'Ταχύτητα Απόκρισης', 'Κοινωνική Ενσυναίσθηση']
             fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(
-                r=[4, 3, 5, 4, 4], 
-                theta=categories, 
-                fill='toself', 
-                marker=dict(color='#6366f1'),
-                fillcolor='rgba(99, 102, 241, 0.3)'
-            ))
-            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            fig_radar.add_trace(go.Scatterpolar(r=[4, 3, 5, 4, 4], theta=categories, fill='toself', marker=dict(color='#6366f1'), fillcolor='rgba(99, 102, 241, 0.3)'))
+            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
             st.plotly_chart(fig_radar, use_container_width=True)
 
         with col_chart2:
             st.write("### 📈 Καμπύλη Μάθησης (XP Progression)")
             fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#10b981', width=3)))
-            fig_xp.update_layout(title="Εξέλιξη Πόντων Εμπειρίας", xaxis_title="Αλληλεπιδράσεις", yaxis_title="XP")
+            fig_xp.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
             st.plotly_chart(fig_xp, use_container_width=True)
-        
-        st.write("### 🎭 Συναισθηματικό Ιστορικό (Mood Tracker)")
-        st.info(f"Η τελευταία καταγεγραμμένη διάθεση του παιδιού είναι: **{st.session_state.user['mood']}**")
 
     # --- PAGE: EDUCATOR PORTAL ---
     elif st.session_state.page == "educator_portal":
         st.title("🏫 Educator Portal (Στατιστικά Τάξης)")
         st.subheader("Συγκεντρωτική εικόνα για τους συνεργαζόμενους Παιδικούς Σταθμούς / Νηπιαγωγεία")
         
-        st.info("💡 Αυτό το Dashboard εμφανίζεται στους εκπαιδευτικούς φορείς που αγοράζουν το B2B Enterprise πακέτο μας. (Συμβατότητα e-me API Ανιχνεύσιμη)")
+        st.info("💡 Συμβατότητα με e-me API & Ψηφιακό Σχολείο Ενεργή.")
         
         class_data = pd.DataFrame({
             'Μαθητής': ['Νικόλας', 'Μαρία', 'Γιώργος', 'Ελένη', 'Δημήτρης'],
             'Εβδομαδιαία XP': [120, 240, 90, 310, 150],
             'Κυρίαρχο Συναίσθημα': ['Χαρούμενος', 'Ενθουσιώδης', 'Κουρασμένος', 'Χαρούμενος', 'Ήρεμος']
         })
-        
-        st.write("### 📈 Πρόοδος Μαθητών Τμήματος Α1")
         st.table(class_data)
-        
-        fig_class = go.Figure([go.Bar(x=class_data['Μαθητής'], y=class_data['Εβδομαδιαία XP'], marker_color='#6366f1')])
-        fig_class.update_layout(title="Σύγκριση XP Τάξης", xaxis_title="Μαθητές", yaxis_title="Συνολικά XP")
-        st.plotly_chart(fig_class, use_container_width=True)
 
     # --- PAGE: PROFILE SETTINGS ---
     elif st.session_state.page == "profile_settings":
         st.title("⚙️ Ρυθμίσεις Προφίλ")
-        st.write("Διαχείριση στοιχείων του μικρού μαθητή.")
-        
         new_name = st.text_input("Όνομα Παιδιού:", value=st.session_state.user["name"])
         new_age = st.number_input("Ηλικία Παιδιού:", min_value=3, max_value=12, value=st.session_state.user["age"])
         
