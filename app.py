@@ -308,8 +308,8 @@ def main():
         
         st.markdown("""
             <div class="premium-card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); text-align: center; border: none;">
-                <h2 style="color: white; font-weight: 900; margin: 0;">✨ THE NEW EDTECH STANDARD</h2>
-                <p style="color: #bfdbfe; margin-top: 8px; font-size: 16px;">100x Πιο Διαδραστικό από το Duolingo & το MagicSchool μαζί.</p>
+                <h2 style="color: white; font-weight: 900; margin: 0;">✨ ΠΛΑΤΦΟΡΜΑ ΕΚΠΑΙΔΕΥΤΙΚΗΣ ΤΕΧΝΟΛΟΓΙΑΣ</h2>
+                <p style="color: #bfdbfe; margin-top: 8px; font-size: 16px;">Ολοκληρωμένο περιβάλλον αλληλεπίδρασης και μάθησης.</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -337,7 +337,7 @@ def main():
             st.write("### Εγγραφή Νέου Χρήστη")
             reg_user = st.text_input("Όνομα Χρήστη:", key="reg_user")
             reg_pass = st.text_input("Κωδικός Πρόσβασης:", type="password", key="reg_pass")
-            reg_role = st.selectbox("Επιλέξτε τον Ρόλο σας:", ["Γονέας", "Εκπαιδευτικός"])
+            reg_role = st.selectbox("Επιλέξτε τον Ρόλο Arrays:", ["Γονέας", "Εκπαιδευτικός"])
             
             if st.button("📝 Ολοκλήρωση Εγγραφής", use_container_width=True):
                 if not reg_user.strip() or not reg_pass.strip():
