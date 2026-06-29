@@ -16,8 +16,8 @@ from streamlit_mic_recorder import speech_to_text
 # =================================================================
 class AppConfig:
     """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα"""
-    TITLE = "PedaGO Genesis Pro v7.0"
-    VERSION = "Build 2026.EnterpriseCore"
+    TITLE = "PedaGO Genesis Pro v7.5"
+    VERSION = "Build 2026.Sovereign"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)"},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)"},
@@ -26,7 +26,7 @@ class AppConfig:
 
     @staticmethod
     def inject_premium_styles():
-        """Έγχυση CSS για Native App Αίσθηση"""
+        """Έγχυση CSS για Native App Αίσθηση και Speech Bubbles"""
         st.markdown("""
             <style>
             .stApp { background-color: #0f172a; color: #f8fafc; }
@@ -38,11 +38,21 @@ class AppConfig:
                 box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
                 margin-bottom: 20px;
             }
-            .animated-gradient-text {
-                background: linear-gradient(135deg, #60a5fa, #34d399);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                font-weight: 800;
+            .phoebus-bubble {
+                background: #1e293b;
+                border-left: 5px solid #10b981;
+                padding: 15px;
+                border-radius: 0px 15px 15px 15px;
+                margin: 10px 0px;
+                color: #e2e8f0;
+            }
+            .phoebus-bubble-tired {
+                background: #1e293b;
+                border-left: 5px solid #3b82f6;
+                padding: 15px;
+                border-radius: 0px 15px 15px 15px;
+                margin: 10px 0px;
+                color: #e2e8f0;
             }
             </style>
         """, unsafe_allow_html=True)
@@ -280,26 +290,7 @@ def main():
         st.subheader("Η δική σου Πρωινή Εδέμ περιμένει!")
         
         st.markdown("""
-            <style>
-            @keyframes pulse {
-                0% { transform: scale(0.98); opacity: 0.9; }
-                50% { transform: scale(1.01); opacity: 1; }
-                100% { transform: scale(0.98); opacity: 0.9; }
-            }
-            .animated-banner {
-                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                color: white;
-                padding: 30px;
-                border-radius: 20px;
-                text-align: center;
-                font-size: 22px;
-                font-weight: bold;
-                margin-bottom: 30px;
-                animation: pulse 4s infinite ease-in-out;
-                box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
-            }
-            </style>
-            <div class="animated-banner">
+            <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 30px; border-radius: 20px; text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);">
                 ✨ Καλώς ήρθες στον Κόσμο του Φοίβου! Ολοκληρωμένη Πλατφόρμα Εκπαιδευτικής Τεχνολογίας
             </div>
         """, unsafe_allow_html=True)
@@ -318,20 +309,7 @@ def main():
             
             st.markdown(f"""
                 <a href="{stripe_link}" target="_blank" style="text-decoration: none;">
-                    <div style="
-                        background-color: #10b981;
-                        color: white;
-                        padding: 14px 20px;
-                        text-align: center;
-                        border-radius: 12px;
-                        font-weight: bold;
-                        font-size: 16px;
-                        margin-top: 10px;
-                        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
-                        cursor: pointer;
-                        display: block;
-                        transition: 0.3s;
-                        border: 1px solid #059669;">
+                    <div style="background-color: #10b981; color: white; padding: 14px 20px; text-align: center; border-radius: 12px; font-weight: bold; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); cursor: pointer; display: block; border: 1px solid #059669;">
                         💎 Ενεργοποίηση Pro (9.99€/μήνα)
                     </div>
                 </a>
@@ -343,7 +321,7 @@ def main():
                 st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
                 st.rerun()
 
-    # --- PAGE: FIRST TIME USER ONBOARDING ---
+    # --- PAGE: FIRST TIME USER ONBOARDING (WITH SECURE DATA VALIDATION) ---
     elif st.session_state.page == "onboarding":
         st.title("👋 Καλώς ήρθες στο PedaGO!")
         st.subheader("Ας δημιουργήσουμε το προφίλ του μικρού μας εξερευνητή για πρώτη φορά.")
@@ -356,8 +334,11 @@ def main():
             submit_onboarding = st.form_submit_button("🚀 Ξεκινάμε το Ταξίδι!", use_container_width=True)
             
             if submit_onboarding:
-                if onboard_name.strip() == "":
+                # ΝΕΟ: Throttling & Validation Guard
+                if not onboard_name.strip():
                     st.error("💡 Σε παρακαλώ, συμπλήρωσε το όνομα του παιδιού για να μπορεί ο Φοίβος να του απευθύνεται σωστά!")
+                elif onboard_age < 3 or onboard_age > 12:
+                    st.error("💡 Παρακαλώ εισάγετε μια έγκυρη ηλικία μεταξύ 3 και 12 ετών.")
                 else:
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
@@ -397,7 +378,7 @@ def main():
                     st.session_state.page = "adventure"
                     st.rerun()
 
-    # --- PAGE: ADVENTURE ---
+    # --- PAGE: ADVENTURE (WITH CUSTOM LIVE SPEECH BUBBLES) ---
     elif st.session_state.page == "adventure":
         render_hud()
         
@@ -420,9 +401,12 @@ def main():
         current_mood = st.session_state.user["mood"].lower()
         avatar_icon = "🧸✨"
         avatar_style = "border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1);"
+        bubble_class = "phoebus-bubble"
+        
         if "κουρασμένος" in current_mood or "λυπημένος" in current_mood:
             avatar_icon = "🧸💤"
             avatar_style = "border: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.1);"
+            bubble_class = "phoebus-bubble-tired"
         
         st.markdown(f"""
             <div style="padding: 15px; border-radius: 15px; {avatar_style} margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
@@ -434,11 +418,19 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # Υποδομή Υβριδικής Μάθησης (BeeBot Hub Bridge Option)
         st.caption("🤖 Προαιρετική Σύνδεση με Εκπαιδευτική Ρομποτική (BeeBot Mod Active)")
 
+        # Εμφάνιση Διαλόγου με Custom CSS Speech Bubbles
         for msg in st.session_state.user["history"]:
-            with st.chat_message(msg["role"]): st.write(msg["content"])
+            if msg["role"] == "assistant":
+                st.markdown(f"""
+                    <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;">
+                        <div style="font-size: 24px;">🧸</div>
+                        <div class="{bubble_class}"><b>Φοίβος:</b> {msg['content']}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                with st.chat_message("user"): st.write(msg["content"])
 
         user_speech = VoiceEngine.listen()
         if user_speech:
@@ -493,16 +485,21 @@ def main():
         else:
             st.warning("🔒 Καμία έννοια δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και χρησιμοποιήστε τη λέξη 'αστέρι' για να δείτε τον αλγόριθμο της γλωσσικής μνήμης να ενεργοποιείται live.")
 
-    # --- PAGE: PARENT DASHBOARD (UPGRADED RADAR CHART) ---
+    # --- PAGE: PARENT DASHBOARD (WITH METRIC MILESTONES) ---
     elif st.session_state.page == "parent_dashboard":
         st.title("📊 Dashboard Γονέα & Analytics")
         st.subheader(f"Συμπεράσματα και Πρόοδος για τον/την: {st.session_state.user['name']}")
         
-        col_m1, col_m2 = st.columns(2)
+        col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
             st.metric("Συνολικά XP", f"{st.session_state.user['xp']} XP", "20 XP σήμερα")
         with col_m2:
             st.metric("Τρέχον Επίπεδο", f"Level {st.session_state.user['level']}")
+        with col_m3:
+            # ΝΕΟ: Gamified Milestone Metric Tracker
+            next_level_xp = st.session_state.user["level"] * 100
+            xp_needed = next_level_xp - st.session_state.user["xp"]
+            st.metric("Για το επόμενο Level", f"{xp_needed} XP", f"Στόχος: {next_level_xp} XP")
             
         st.write("### 🏅 Ψηφιακά Παράσημα (Achievements)")
         badges_col = st.columns(3)
@@ -524,7 +521,6 @@ def main():
         
         with col_chart1:
             st.write("### 📊 Παιδαγωγικό Προφίλ Δεξιοτήτων")
-            # ΝΕΟ: Εμπλουτισμένο Radar Chart Γνωστικής Ανάπτυξης
             categories = ['Λεξιλόγιο', 'Κριτική Σκέψη', 'Συναισθηματική Αυτορύθμιση', 'Ταχύτητα Απόκρισης', 'Κοινωνική Ενσυναίσθηση']
             fig_radar = go.Figure()
             fig_radar.add_trace(go.Scatterpolar(
