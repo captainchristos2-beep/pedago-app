@@ -12,12 +12,12 @@ from gtts import gTTS
 from streamlit_mic_recorder import speech_to_text
 
 # =================================================================
-# MODULE 1: GLOBAL CONFIGURATION, THEMES & HYPER-GAMIFIED CSS
+# MODULE 1: GLOBAL CONFIGURATION, THEMES & OMNIBUS PREMIUM CSS
 # =================================================================
 class AppConfig:
-    """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα (Duolingo + MagicSchool Grade)"""
-    TITLE = "PedaGO Sovereign v9.0"
-    VERSION = "Build 2026.UnifiedAuth"
+    """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα (Duolingo + MagicSchool Sovereign Fusion)"""
+    TITLE = "PedaGO Sovereign v10.0"
+    VERSION = "Build 2026.OmnibusCore"
     THEMES = {
         "Εδέμ Πρωί": {"color": "#10b981", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.", "bg": "linear-gradient(135deg, #064e3b, #022c22)", "accent": "#34d399"},
         "Νησί Γρίφων": {"color": "#f59e0b", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.", "bg": "linear-gradient(135deg, #78350f, #451a03)", "accent": "#fbbf24"},
@@ -26,11 +26,15 @@ class AppConfig:
 
     @staticmethod
     def inject_premium_styles():
-        """Έγχυση CSS για Glassmorphism, Neon Elements & Duolingo Bars"""
+        """Έγχυση CSS για Neon Glassmorphism, Duolingo Bars & Dynamic Speech Bubbles"""
         st.markdown("""
             <style>
             @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+            
+            /* Global Application Design */
             .stApp { background-color: #0b0f19; color: #f1f5f9; font-family: 'Nunito', sans-serif; }
+            
+            /* Premium Cards */
             .premium-card {
                 background: rgba(30, 41, 59, 0.45);
                 backdrop-filter: blur(12px);
@@ -41,15 +45,24 @@ class AppConfig:
                 box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
                 margin-bottom: 20px;
             }
+            
+            /* Duolingo XP Progress Bar */
             .duo-progress-container {
                 width: 100%; background-color: #1e293b; border-radius: 12px; padding: 3px; border: 1px solid #334155; margin: 10px 0px;
             }
             .duo-progress-bar {
                 height: 16px; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 9px; transition: width 0.5s ease-in-out;
             }
+            
+            /* Mood-Aware Speech Bubbles */
             .phoebus-bubble {
                 background: rgba(30, 41, 59, 0.7); border-left: 5px solid #10b981; padding: 18px; border-radius: 4px 20px 20px 20px; margin: 12px 0px; color: #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             }
+            .phoebus-bubble-tired {
+                background: rgba(30, 41, 59, 0.7); border-left: 5px solid #3b82f6; padding: 18px; border-radius: 4px 20px 20px 20px; margin: 12px 0px; color: #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            }
+            
+            /* MagicSchool Engine Header */
             .smart-action-title {
                 font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #6366f1; margin-bottom: 8px;
             }
@@ -108,24 +121,20 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS, AUTH & DATA MANAGER (ADVANCED SQL RELATIONSHIPS)
+# MODULE 4: SAAS, AUTH & DATA MANAGER (RELATIONAL SQL OMNIBUS)
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρηστών, Ρόλων, SQLite Βάσης, XP & Καμπύλης Μνήμης"""
+    """Διαχείριση Χρηστών, Ρόλων, SQLite Βάσης, XP & Καμπύλης Μνήμης (SM-2)"""
     
     @staticmethod
     def init_db():
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        # Πίνακας Λογαριασμών (Χρήστες)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
-                username TEXT PRIMARY KEY,
-                password TEXT,
-                role TEXT
+                username TEXT PRIMARY KEY, password TEXT, role TEXT
             )
         """)
-        # Πίνακας Προφίλ Παιδιού / Γονέα
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_profile (
                 id INTEGER PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, plan TEXT, age INTEGER, onboarded INTEGER
@@ -265,12 +274,11 @@ def render_hud():
     """, unsafe_allow_html=True)
 
 def render_sidebar():
-    """Επαγγελματικό Μενού Πλοήγησης βάσει Ενεργού Ρόλου (Role Guard)"""
+    """Επαγγελματικό Μενού Πλοήγησης βάσει Ενεργού Ρόλου (Role Guard Engine)"""
     if st.session_state.page not in ["login", "onboarding"]:
         st.sidebar.title("📌 PedaGO Dashboard")
         st.sidebar.info(f"🔑 Ενεργός Ρόλος: **{st.session_state.current_role}**")
         
-        # NAVIGATION ROADBLOCKS BASED ON ROLE
         if st.session_state.current_role == "Γονέας":
             if st.sidebar.button("🗺️ Κόσμοι & Περιπέτεια (Παιδί)", use_container_width=True): st.session_state.page = "hub"; st.rerun()
             if st.sidebar.button("🧠 Γλωσσική Μνήμη", use_container_width=True): st.session_state.page = "memory_core"; st.rerun()
@@ -295,8 +303,15 @@ def main():
 
     # --- PAGE: UNIFIED LOGIN / REGISTER (ROLE BASED) ---
     if st.session_state.page == "login":
-        st.title("🚀 PedaGO Sovereign v9.0")
-        st.subheader("Ολοκληρωμένη Πλατφόρμα Εκπαιδευτικής Τεχνολογίας")
+        st.title("🚀 PedaGO Sovereign v10.0")
+        st.subheader("Η δική σου Πρωινή Εδέμ περιμένει!")
+        
+        st.markdown("""
+            <div class="premium-card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); text-align: center; border: none;">
+                <h2 style="color: white; font-weight: 900; margin: 0;">✨ THE NEW EDTECH STANDARD</h2>
+                <p style="color: #bfdbfe; margin-top: 8px; font-size: 16px;">100x Πιο Διαδραστικό από το Duolingo & το MagicSchool μαζί.</p>
+            </div>
+        """, unsafe_allow_html=True)
         
         auth_tab1, auth_tab2 = st.tabs(["🔑 Σύνδεση Χρήστη", "📝 Δημιουργία Προφίλ"])
         
@@ -316,7 +331,7 @@ def main():
                         st.session_state.page = "educator_portal"
                     st.rerun()
                 else:
-                    st.error("❌ Λανθασμένα στοιχεία σύνδεσης! Παρακαλώ ελέγξτε το όνομα χρήστη και τον κωδικό.")
+                    st.error("❌ Λανθασμένα στοιχεία σύνδεσης!")
                     
         with auth_tab2:
             st.write("### Εγγραφή Νέου Χρήστη")
@@ -329,12 +344,10 @@ def main():
                     st.error("💡 Παρακαλώ συμπληρώστε όλα τα πεδία!")
                 else:
                     success = SessionManager.register_user(reg_user, reg_pass, reg_role)
-                    if success:
-                        st.success("🎉 Ο λογαριασμός δημιουργήθηκε επιτυχώς! Μπορείτε τώρα να συνδεθείτε.")
-                    else:
-                        st.error("❌ Το όνομα χρήστη χρησιμοποιείται ήδη. Δοκιμάστε ένα άλλο.")
+                    if success: st.success("🎉 Ο λογαριασμός δημιουργήθηκε επιτυχώς!")
+                    else: st.error("❌ Το όνομα χρήστη χρησιμοποιείται ήδη.")
 
-    # --- PAGE: FIRST TIME USER ONBOARDING ---
+    # --- PAGE: FIRST TIME USER ONBOARDING (WITH DATA VALIDATION GUARD) ---
     elif st.session_state.page == "onboarding":
         st.title("👋 Δημιουργία Προφίλ Παιδιού")
         st.subheader("Συνδέστε αυτόματα τον λογαριασμό γονέα με τον μικρό εξερευνητή.")
@@ -344,6 +357,7 @@ def main():
             submit_onboarding = st.form_submit_button("🚀 Δημιουργία & Σύνδεση!", use_container_width=True)
             if submit_onboarding:
                 if not onboard_name.strip(): st.error("💡 Συμπληρώστε το όνομα του παιδιού!")
+                elif onboard_age < 3 or onboard_age > 12: st.error("💡 Εισάγετε έγκυρη ηλικία (3-12 ετών).")
                 else:
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
@@ -362,13 +376,11 @@ def main():
             st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το ημερήσιο όριο χρήσης!")
             return
         
-        # Stripe Checkout Activation Banner inside active student view
+        # Stripe Checkout Active Link Integration
         st.markdown("""
             <div class="premium-card" style="border-left: 5px solid #10b981; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    💎 <b>Pro Plan Upgrade:</b> Ξεκλειδώστε απεριόριστο χρόνο ομιλίας με τον Φοίβο!
-                </div>
-                <a href="https://buy.stripe.com/5kA6oE736g1Y5JCdQQ" target="_blank" style="text-decoration:none; background:#10b981; color:white; padding:8px 16px; border-radius:8px; font-weight:bold;">Ενεργοποίηση Pro</a>
+                <div>💎 <b>Pro Plan Upgrade:</b> Ξεκλειδώστε απεριόριστο χρόνο ομιλίας και τα πλήρη Affective AI Analytics!</div>
+                <a href="https://buy.stripe.com/5kA6oE736g1Y5JCdQQ" target="_blank" style="text-decoration:none; background:#10b981; color:white; padding:8px 16px; border-radius:8px; font-weight:bold;">Ενεργοποίηση Pro (9.99€/μήνα)</a>
             </div>
         """, unsafe_allow_html=True)
 
@@ -381,7 +393,7 @@ def main():
                     st.session_state.page = "adventure"
                     st.rerun()
 
-    # --- PAGE: ADVENTURE ---
+    # --- PAGE: ADVENTURE (WITH SPEECH BUBBLES & MOOD AVATAR) ---
     elif st.session_state.page == "adventure":
         render_hud()
         if SessionManager.check_screen_time():
@@ -394,9 +406,36 @@ def main():
         with col_back:
             if st.button("↩️ Αλλαγή Κόσμου", use_container_width=True): st.session_state.page = "hub"; st.rerun()
 
+        # MagicSchool Style AI Context Panel
+        st.markdown(f"""
+            <div class="premium-card" style="padding:15px; border-left: 4px solid {AppConfig.THEMES[world]['color']}; margin-bottom:15px;">
+                <div class="smart-action-title">🔮 MagicSchool Active Engine</div>
+                <span style="font-size:13px; color:#94a3b8;">Διαφοροποιημένη Διδασκαλία • Ηλικιακό Προφίλ: {st.session_state.user['age']} ετών • Μέθοδος: Σωκρατική Γνωστική Σκαλωσιά</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Affective AI Mood-Aware Avatar Configuration
+        current_mood = st.session_state.user["mood"].lower()
+        avatar_icon, bubble_class = ("🧸✨", "phoebus-bubble")
+        if "κουρασμένος" in current_mood or "λυπημένος" in current_mood:
+            avatar_icon, bubble_class = ("🧸💤", "phoebus-bubble-tired")
+
+        st.markdown(f"""
+            <div style="padding: 15px; border-radius: 15px; border: 2px solid {AppConfig.THEMES[world]['color']}; background: rgba(255,255,255,0.02); margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 35px;">{avatar_icon}</div>
+                <div>
+                    <b style="color: white; font-size: 16px;">Ψηφιακός Μέντορας Φοίβος</b><br>
+                    <span style="color: #cbd5e1; font-size: 14px;">Κατάσταση: Ανιχνεύω τη διάθεσή σου ως <i><b>{st.session_state.user['mood']}</b></i>.</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.caption("🤖 Προαιρετική Σύνδεση με Εκπαιδευτική Ρομποτική (BeeBot Hybrid Mod Active)")
+
+        # Render Speech Dialogue Framework
         for msg in st.session_state.user["history"]:
             if msg["role"] == "assistant":
-                st.markdown(f'<div class="phoebus-bubble" style="border-left-color: {AppConfig.THEMES[world]["color"]};"><b>Φοίβος:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px;"><div style="font-size: 24px;">🧸</div><div class="{bubble_class}"><b>Φοίβος:</b> {msg["content"]}</div></div>', unsafe_allow_html=True)
             else:
                 with st.chat_message("user"): st.write(msg["content"])
 
@@ -404,37 +443,67 @@ def main():
         if user_speech:
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1
+            
+            # Repetition Trigger Linking
             if "αστέρι" in user_speech.lower():
                 SessionManager.update_word_memory("αστέρι", 5)
                 if not st.session_state.user["vocab_bonus"]:
                     st.session_state.user["vocab_bonus"] = True
                     SessionManager.add_xp(50)
+                    st.toast("🎯 Γλωσσική Μνήμη: Η λέξη 'αστέρι' αποθηκεύτηκε στο Spaced Repetition!", icon="✨")
+
             with st.spinner("Ο Φοίβος σε ακούει..."):
                 mood_data = brain.analyze_sentiment(user_speech)
                 st.session_state.user["mood"] = mood_data["mood"]
+                st.session_state.user["mood_history"].append(mood_data["mood"])
+                
                 response = brain.generate_response(st.session_state.user["history"], mood_data, AppConfig.THEMES[world]["prompt"], st.session_state.user["age"])
                 st.session_state.user["history"].append({"role": "assistant", "content": response})
                 SessionManager.add_xp(20)
                 VoiceEngine.speak(response)
                 st.rerun()
 
-    # --- PAGE: LANGUAGE MEMORY CORE ---
+    # --- PAGE: LANGUAGE MEMORY CORE (SM-2 DATA GRAPH) ---
     elif st.session_state.page == "memory_core":
         st.title("🧠 Σύστημα Γλωσσικής Μνήμης")
+        st.subheader("Παρακολούθηση Καμπύλης Λήθης & Διαστημικής Επανάληψης (Spaced Repetition)")
+        
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         cursor.execute("SELECT word, interval, ease_factor, next_review FROM word_memory")
         rows = cursor.fetchall()
         conn.close()
         if rows:
-            cards_data = pd.DataFrame(rows, columns=['Λέξη / Έννοια', 'Μεσοδιάστημα (Ημέρες)', 'Συντελεστής Ευκολίας', 'Επόμενος Έλεγχος'])
+            cards_data = pd.DataFrame(rows, columns=['Λέξη / Έννοια', 'Μεσοδιάστημα (Ημέρες)', 'Συντελεστής Ευκολίας (Ease Factor)', 'Επόμενος Έλεγχος'])
             st.dataframe(cards_data, use_container_width=True)
-        else: st.warning("🔒 Καμία έννοια δεν έχει καταγραφεί ακόμα!")
+            
+            fig_anki = go.Figure([go.Bar(x=cards_data['Λέξη / Έννοια'], y=cards_data['Μεσοδιάστημα (Ημέρες)'], marker_color='#10b981')])
+            fig_anki.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
+            st.plotly_chart(fig_anki, use_container_width=True)
+        else: st.warning("🔒 Καμία έννοια δεν έχει καταγραφεί ακόμα! Μπείτε σε έναν Κόσμο και πείτε τη λέξη 'αστέρι'.")
 
-    # --- PAGE: PARENT DASHBOARD ---
+    # --- PAGE: PARENT DASHBOARD (RADAR + MILESTONES) ---
     elif st.session_state.page == "parent_dashboard":
         st.title("📊 Dashboard Γονέα & Analytics")
         render_hud()
+        
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            next_level_xp = st.session_state.user["level"] * 100
+            xp_needed = next_level_xp - st.session_state.user["xp"]
+            st.metric("Για το επόμενο Level", f"{xp_needed} XP", f"Στόχος: {next_level_xp} XP")
+            
+        st.write("### 🏅 Ψηφιακά Παράσημα (Achievements)")
+        badges_col = st.columns(3)
+        with badges_col[0]: st.success("🌱 **Πρώτο Βήμα**\n(Ξεκλείδωσε με την εγγραφή)")
+        with badges_col[1]:
+            if st.session_state.user["xp"] >= 60: st.success("🏝️ **Εξερευνητής**\n(Ξεκλείδωσε με 60+ XP)")
+            else: st.code("🔒 Κλειδωμένο (60 XP)")
+        with badges_col[2]:
+            if st.session_state.user["level"] >= 2: st.success("👑 **Master του Λόγου**\n(Ξεκλείδωσε στο Level 2)")
+            else: st.code("🔒 Κλειδωμένο (Level 2)")
+
+        st.write("---")
         col_chart1, col_chart2 = st.columns(2)
         with col_chart1:
             st.write("### 📊 Παιδαγωγικό Προφίλ Δεξιοτήτων")
@@ -452,7 +521,7 @@ def main():
     # --- PAGE: EDUCATOR PORTAL ---
     elif st.session_state.page == "educator_portal":
         st.title("🏫 Educator Portal (Στατιστικά Τάξης)")
-        st.info("💡 Σύνδεση με το Ψηφιακό Σχολείο e-me / η-τάξη Ενεργή.")
+        st.info("💡 Σύνδεση με το Ψηφιακό Σχολείο e-me / η-τάξη & Υποστήριξη Ρομποτικής BeeBot Ενεργή.")
         class_data = pd.DataFrame({
             'Μαθητής': ['Νικόλας', 'Μαρία', 'Γιώργος', 'Ελένη', 'Δημήτρης'],
             'Εβδομαδιαία XP': [120, 240, 90, 310, 150],
@@ -469,7 +538,7 @@ def main():
             st.session_state.user["name"] = new_name
             st.session_state.user["age"] = new_age
             SessionManager.save_to_db(st.session_state.user)
-            st.success("Το προφίλ ενημερώθηκε επιτυχώς!")
+            st.success("Το προφίλ ενημερώθηκε επιτυχώς στη μόνιμη βάση!")
             st.rerun()
 
 if __name__ == "__main__":
