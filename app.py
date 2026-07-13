@@ -152,7 +152,7 @@ class VoiceEngine:
 # MODULE 3: AFFECTIVE & ADAPTIVE AI CORE (THE BRAIN)
 # =================================================================
 class PhoebusBrain:
-    """Η Καρδιά του Φοίβου με Συναισθηματική & Ηλικιακή Νοημοσύνη"""
+    """Η Καρδιά του Φοίβου με Συναισθηματική, Ηλικιακή & Γλωσσική Νοημοσύνη"""
     def __init__(self):
         if "GROQ_API_KEY" in st.secrets:
             self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -172,13 +172,35 @@ class PhoebusBrain:
         except Exception:
             return {"mood": "Ήρεμος", "energy": 5}
 
-    def generate_response(self, history, mood_context, world_prompt, child_age):
+    def evaluate_vocabulary(self, child_reply, target_word):
+        """Το AI αξιολογεί live αν το παιδί κατανόησε και χρησιμοποίησε σωστά τη λέξη-στόχο"""
+        try:
+            prompt = f"""
+            Εξέτασε αν το παιδί χρησιμοποίησε ή κατάλαβε τη λέξη-στόχο '{target_word}' στην απάντησή του: '{child_reply}'.
+            Βαθμολόγησε την ποιότητα ανάκλησης (quality) από 0 έως 5:
+            5 - Τέλεια χρήση και κατανόηση της λέξης.
+            3 - Σωστή χρήση αλλά με καθοδήγηση.
+            1 - Πλήρης παρανόηση ή αποτυχία χρήσης της λέξης.
+            Επίστρεψε ΑΥΣΤΗΡΑ ένα JSON object: {{"quality": 0-5}}
+            """
+            response = self.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "system", "content": "You are a linguistic educator. Respond ONLY with JSON."},
+                          {"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            data = json.loads(response.choices[0].message.content)
+            return int(data.get("quality", 3))
+        except Exception:
+            return 3
+
+    def generate_response(self, history, mood_context, world_prompt, child_age, target_word):
         if child_age <= 4:
-            age_instruction = "Το παιδί είναι προ-νήπιο (4 ετών). Χρησιμοποίησε πολύ απλές, μικρές προτάσεις έως 5-6 λέξεις."
+            age_instruction = f"Το παιδί είναι προ-νήπιο (4 ετών). Χρησιμοποίησε πολύ απλές, μικρές προτάσεις έως 5-6 λέξεις. Προσπάθησε να εισάγεις με πολύ απλό τρόπο τη λέξη-στόχο: '{target_word}'."
         else:
-            age_instruction = "Το παιδί είναι νήπιο/πρωτοσχολικό (5-6 ετών+). Ενθάρρυνε σύνθετες απαντήσεις και χτίσε γνωστική σκαλωσιά (scaffolding)."
+            age_instruction = f"Το παιδί είναι νήπιο/πρωτοσχολικό (5-6 ετών+). Ενθάρρυνε σύνθετες απαντήσεις, χτίσε γνωστική σκαλωσιά και προκάλεσέ το να χρησιμοποιήσει στην απάντησή του τη λέξη-στόχο: '{target_word}'."
             
-        full_prompt = f"{world_prompt}\nΤο παιδί νιώθει {mood_context['mood']}. {age_instruction} Μίλα στα Ελληνικά με καθαρό, παιδικό και ζεστό ύφος."
+        full_prompt = f"{world_prompt}\nΤο παιδί νιώθει {mood_context['mood']}.\n{age_instruction}\nΜίλα στα Ελληνικά με καθαρό, παιδικό και ζεστό ύφος, χωρίς να αναφέρεις τη λέξη 'στόχος' ή 'οδηγία'."
         messages = [{"role": "system", "content": full_prompt}] + history
         response = self.client.chat.completions.create(
             model="llama-3.3-70b-versatile", messages=messages, temperature=0.7
@@ -283,7 +305,6 @@ class SessionManager:
             ef = 2.5
             interval = 1 if quality < 3 else 6
 
-        # Προσαρμογή του Ease Factor
         ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
         if ef < 1.3: ef = 1.3
         
@@ -324,7 +345,6 @@ class SessionManager:
 # MODULE 5: UI COMPONENTS & RENDERING
 # =================================================================
 def render_hud():
-    """Εμφάνιση HUD με Duolingo-Grade Σχεδιασμό"""
     remaining = max(0, st.session_state.user["max_usage"] - st.session_state.user["usage_count"]) if st.session_state.user["plan"] == "Free" else "∞"
     current_level_base = (st.session_state.user["level"] - 1) * 100
     xp_in_level = st.session_state.user["xp"] - current_level_base
@@ -411,7 +431,7 @@ def main():
     elif st.session_state.page == "onboarding":
         st.title("👋 Προφίλ Μικρού Εξερευνητή")
         with st.form("onboarding_form"):
-            onboard_name = st.text_input("Όνομα Παιού:")
+            onboard_name = st.text_input("Όνομα Παιδιού:")
             onboard_age = st.number_input("Ηλικία Παιδιού (3-12):", min_value=3, max_value=12, value=5)
             if st.form_submit_button("🚀 Έναρξη Περιπέτειας!", use_container_width=True):
                 if onboard_name.strip():
@@ -480,25 +500,37 @@ def main():
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1
             
-            # Έλεγχος Λέξεων-Στόχων για το Spaced Repetition
-            target_words = ["αστέρι", "πλανήτης", "γρίφος", "παράδεισος", "λουλούδι", "ουρανός", "δέντρο"]
-            found_word = None
-            for w in target_words:
-                if w in user_speech.lower():
-                    found_word = w
-                    break
-            
-            if found_word:
-                SessionManager.update_word_memory(found_word, 5) 
-                st.toast(f"🎯 Η λέξη '{found_word}' καταγράφηκε στη Γλωσσική Μνήμη!", icon="🧠")
-                SessionManager.add_xp(30)
+            # 1. Ορισμός λέξης-στόχου ανάλογα με τον κόσμο δυναμικά
+            world_words = {
+                "🌿 Πράσινη Εδέμ": "δέντρο",
+                "🏝️ Νησί Γρίφων": "γρίφος",
+                "🚀 Διάστημα": "αστέρι"
+            }
+            current_target = world_words.get(world, "λουλούδι")
 
             with st.spinner("Ο Φοίβος σε ακούει..."):
+                # 2. Ανάλυση Συναισθήματος
                 mood_data = brain.analyze_sentiment(user_speech)
                 st.session_state.user["mood"] = mood_data["mood"]
                 st.session_state.user["mood_history"].append(mood_data["mood"])
                 
-                response = brain.generate_response(st.session_state.user["history"], mood_data, AppConfig.THEMES[world]["prompt"], st.session_state.user["age"])
+                # 3. Παιδαγωγική Αξιολόγηση Λεξιλογίου μέσω LLM
+                quality_score = brain.evaluate_vocabulary(user_speech, current_target)
+                
+                if current_target in user_speech.lower() or quality_score >= 3:
+                    SessionManager.update_word_memory(current_target, quality_score)
+                    st.toast(f"🎯 Η λέξη '{current_target}' αξιολογήθηκε με σκορ {quality_score}/5 και αποθηκεύτηκε στη μνήμη!", icon="🧠")
+                    SessionManager.add_xp(30)
+                
+                # 4. Παραγωγή Απάντησης με ενσωμάτωση της λέξης
+                response = brain.generate_response(
+                    st.session_state.user["history"], 
+                    mood_data, 
+                    AppConfig.THEMES[world]["prompt"], 
+                    st.session_state.user["age"],
+                    current_target
+                )
+                
                 st.session_state.user["history"].append({"role": "assistant", "content": response})
                 SessionManager.add_xp(20)
                 VoiceEngine.speak(response)
