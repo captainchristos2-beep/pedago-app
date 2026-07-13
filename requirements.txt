@@ -5,3 +5,4 @@ gTTS
 pandas
 plotly
 streamlit-lottie
+elevenlabs
