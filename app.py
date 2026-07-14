@@ -20,9 +20,30 @@ class AppConfig:
     VERSION = "Build 2026.OmnibusCore"
     
     THEMES = {
-        "🌿 Πράσινη Εδέμ": {"color": "#58cc02", "icon": "🌿", "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα, στοργικά και ενθαρρυντικά με απλά λόγια σαν γλυκός παιδαγωγός.", "bg": "#eefced", "accent": "#58cc02"},
-        "🏝️ Νησί Γρίφων": {"color": "#ff9600", "icon": "🏝️", "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα, έξυπνα παιχνίδια λέξεων και Σωκρατική μέθοδο κατάλληλη για παιδιά.", "bg": "#fef5e7", "accent": "#ff9600"},
-        "🚀 Διάστημα": {"color": "#1cb0f6", "icon": "🚀", "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες, πυραύλους και εξερεύνηση με μεγάλο ενθουσιασμό.", "bg": "#e8f7fe", "accent": "#1cb0f6"}
+        "🌿 Πράσινη Εδέμ": {
+            "color": "#58cc02", 
+            "icon": "🌿", 
+            "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα, στοργικά και ενθαρρυντικά με απλά λόγια σαν γλυκός παιδαγωγός. Κάνε ερωτήσεις για τη φύση, τα ζώα και τα φυτά.", 
+            "bg": "#eefced", 
+            "accent": "#58cc02",
+            "suggested_questions": ["Πώς λένε το αγαπημένο σου ζωάκι;", "Τι χρώμα έχουν τα φύλλα στα δέντρα;", "Έχεις δει ποτέ μια όμορφη πασχαλίτσα;"]
+        },
+        "🏝️ Νησί Γρίφων": {
+            "color": "#ff9600", 
+            "icon": "🏝️", 
+            "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα, έξυπνα παιχνίδια λέξεων και Σωκρατική μέθοδο κατάλληλη για παιδιά. Προκάλεσέ τα να λύσουν ένα μυστήριο.", 
+            "bg": "#fef5e7", 
+            "accent": "#ff9600",
+            "suggested_questions": ["Τι έχει τέσσερα πόδια αλλά δεν μπορεί να περπατήσει;", "Ποιο ζωάκι κάνει 'νιάου' και του αρέσει το γάλα;", "Τι είναι αυτό που ανεβαίνει αλλά δεν κατεβαίνει ποτέ;"]
+        },
+        "🚀 Διάστημα": {
+            "color": "#1cb0f6", 
+            "icon": "🚀", 
+            "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες, πυραύλους και εξερεύνηση με μεγάλο ενθουσιασμό.", 
+            "bg": "#e8f7fe", 
+            "accent": "#1cb0f6",
+            "suggested_questions": ["Πώς θα ονόμαζες τον δικό σου πύραυλο;", "Ποιος πλανήτης σου αρέσει πιο πολύ;", "Αν συναντούσες έναν εξωγήινο, τι θα του έλεγες;"]
+        }
     }
 
     @staticmethod
@@ -74,26 +95,22 @@ class AppConfig:
                 font-weight: 700;
                 width: 100%;
             }
-            .phoebus-bubble-tired {
-                background: #ffffff; 
-                border: 2px solid #1cb0f6; 
-                border-bottom: 4px solid #1cb0f6;
-                padding: 18px; 
-                border-radius: 18px; 
-                margin: 12px 0px; 
-                color: #3c3c3c;
-                font-size: 16px;
-                font-weight: 700;
-                width: 100%;
-            }
             
-            .smart-action-title {
-                font-size: 16px; 
-                font-weight: 900; 
-                text-transform: uppercase; 
-                letter-spacing: 1px; 
-                color: #1cb0f6; 
-                margin-bottom: 8px;
+            .suggestion-chip {
+                background-color: #f1f1f1;
+                border: 2px solid #e5e5e5;
+                border-radius: 20px;
+                padding: 8px 16px;
+                margin: 5px;
+                display: inline-block;
+                cursor: pointer;
+                font-weight: bold;
+                color: #4b4b4b;
+                transition: all 0.2s ease;
+            }
+            .suggestion-chip:hover {
+                background-color: #e5e5e5;
+                transform: scale(1.03);
             }
             
             .stTabs [data-baseweb="tab"] {
@@ -197,6 +214,28 @@ class PhoebusBrain:
         )
         return response.choices[0].message.content
 
+    def generate_parent_report(self, history, child_name, child_age):
+        """Δημιουργεί μια ολοκληρωμένη και συγκινητική παιδαγωγική αναφορά για τον γονέα"""
+        try:
+            prompt = f"""
+            Με βάση τον παρακάτω διάλογο του παιδιού ({child_name}, {child_age} ετών) με τον Φοίβο, γράψε μια όμορφη, ενθαρρυντική και αναλυτική αναφορά προόδου για τον γονέα.
+            Οργάνωσε την αναφορά σε:
+            1. 🌟 Σημερινά Επιτεύγματα (ποιες λέξεις χρησιμοποίησε, πώς εκφράστηκε).
+            2. 🎭 Συναισθηματική Εικόνα (τι διάθεση έδειξε κατά τη διάρκεια του παιχνιδιού).
+            3. 💡 Παιδαγωγικές Συμβουλές (τι παιχνίδι ή συζήτηση προτείνει ο Φοίβος να κάνουν μαζί στο σπίτι σήμερα).
+            Διάλογος:
+            {json.dumps(history, ensure_ascii=False)}
+            Απάντησε στα Ελληνικά, με ζεστό, επαγγελματικό παιδαγωγικό ύφος.
+            """
+            response = self.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "system", "content": "You are a senior child developmental psychologist and speech therapist."},
+                          {"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Δεν κατέστη δυνατή η δημιουργία της αναφοράς αυτή τη στιγμή: {e}"
+
 # =================================================================
 # MODULE 4: DATA MANAGER & MEMORY (WITH PERMANENT SAAS PLANS)
 # =================================================================
@@ -207,7 +246,6 @@ class SessionManager:
     def init_db():
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        # Αναβαθμισμένος πίνακας accounts με στήλη plan μόνιμα συνδεδεμένη με το χρήστη
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
                 username TEXT PRIMARY KEY, password TEXT, role TEXT, plan TEXT DEFAULT 'Free'
@@ -253,9 +291,7 @@ class SessionManager:
     def save_to_db(username, user_data):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        # Αποθήκευση του πλάνου στον πίνακα των λογαριασμών
         cursor.execute("UPDATE accounts SET plan = ? WHERE username = ?", (user_data["plan"], username))
-        # Αποθήκευση των στοιχείων του παιδιού
         cursor.execute("INSERT OR REPLACE INTO user_profile (username, name, xp, level, age, onboarded) VALUES (?, ?, ?, ?, ?, ?)",
                        (username, user_data["name"], user_data["xp"], user_data["level"], user_data["age"], 1 if user_data["onboarded"] else 0))
         conn.commit()
@@ -367,7 +403,7 @@ def render_sidebar():
         st.sidebar.info(f"👤 Λογαριασμός: **{st.session_state.active_user}**")
         
         if st.session_state.current_role == "Γονέας":
-            if st.sidebar.button("🗺️ Κόσμοι Περιπεριπέτειας", use_container_width=True): st.session_state.page = "hub"; st.rerun()
+            if st.sidebar.button("🗺️ Κόσμοι Περιπέτειας", use_container_width=True): st.session_state.page = "hub"; st.rerun()
             if st.sidebar.button("🧠 Γλωσσική Μνήμη (SM-2)", use_container_width=True): st.session_state.page = "memory_core"; st.rerun()
             if st.sidebar.button("📊 Στατιστικά Γονέα", use_container_width=True): st.session_state.page = "parent_dashboard"; st.rerun()
             if st.sidebar.button("⚙️ Ρυθμίσεις Προφίλ", use_container_width=True): st.session_state.page = "profile_settings"; st.rerun()
@@ -389,7 +425,7 @@ def main():
     render_sidebar()
     brain = PhoebusBrain()
 
-    # --- STRIPE LIVE AD-HOC DETECTION & PERMANENT UPGRADE ---
+    # --- STRIPE LIVE DETECTION & PERMANENT UPGRADE ---
     query_params = st.query_params
     if "payment" in query_params and query_params["payment"] == "success" and st.session_state.active_user:
         if st.session_state.user:
@@ -461,7 +497,7 @@ def main():
             st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το όριο χρήσης!")
             return
         
-        # Stripe Checkout Active Integration
+        # Stripe Promo Card
         if st.session_state.user["plan"] == "Free":
             st.markdown("""
                 <div class="premium-card" style="border-left: 6px solid #1cb0f6; display: flex; justify-content: space-between; align-items: center; background: #e8f7fe;">
@@ -498,7 +534,7 @@ def main():
         current_mood = st.session_state.user["mood"].lower()
         avatar_icon, bubble_class = ("🧸✨", "phoebus-bubble")
         if "κουρασμένος" in current_mood or "λυπημένος" in current_mood:
-            avatar_icon, bubble_class = ("🧸💤", "phoebus-bubble-tired")
+            avatar_icon, bubble_class = ("🧸💤", "phoebus-bubble")
 
         st.markdown(f"""
             <div style="padding: 20px; border-radius: 20px; border: 2px solid #e5e5e5; background: #f7f7f7; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
@@ -510,6 +546,15 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
+        # 🧠 Παιδαγωγικό Scaffolding (Έξυπνα Voice Prompts)
+        st.markdown("<p style='font-weight: 900; color: #1cb0f6; font-size: 14px; text-transform: uppercase;'>💡 Ιδέες για να μιλήσεις στον Φοίβο:</p>", unsafe_allow_html=True)
+        suggested = AppConfig.THEMES[world]["suggested_questions"]
+        for q in suggested:
+            st.markdown(f"<span class='suggestion-chip'>{q}</span>", unsafe_allow_html=True)
+
+        st.write("---")
+
+        # Διάλογος
         for msg in st.session_state.user["history"]:
             if msg["role"] == "assistant":
                 st.markdown(f'<div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px;"><div class="{bubble_class}"><b>Φοίβος:</b> {msg["content"]}</div></div>', unsafe_allow_html=True)
@@ -535,10 +580,14 @@ def main():
                 
                 quality_score = brain.evaluate_vocabulary(user_speech, current_target)
                 
-                if current_target in user_speech.lower() or quality_score >= 3:
+                # 🏆 INSTANT GAMIFIED ACHIEVEMENTS (Pop-up εφέ)
+                if current_target in user_speech.lower() or quality_score >= 4:
                     SessionManager.update_word_memory(st.session_state.active_user, current_target, quality_score)
-                    st.toast(f"🎯 Η λέξη '{current_target}' καταγράφηκε στη μνήμη!", icon="🧠")
-                    SessionManager.add_xp(30)
+                    st.balloons() # Εντυπωσιακό εφέ μπαλονιών στην οθόνη του παιδιού!
+                    st.toast(f"🎉 ΜΠΡΑΒΟ! Ξεκλείδωσες τη λέξη '{current_target}' με σκορ {quality_score}/5!", icon="🏆")
+                    SessionManager.add_xp(50) # Έξτρα XP για το Achievement
+                else:
+                    SessionManager.add_xp(20)
                 
                 response = brain.generate_response(
                     st.session_state.user["history"], 
@@ -549,7 +598,6 @@ def main():
                 )
                 
                 st.session_state.user["history"].append({"role": "assistant", "content": response})
-                SessionManager.add_xp(20)
                 VoiceEngine.speak(response)
                 st.rerun()
 
@@ -579,6 +627,20 @@ def main():
         st.title("📊 Αναφορές & Δεξιότητες Παιδιού")
         render_hud()
         
+        # 📊 Δημιουργία Αναφοράς AI για τον Γονέα
+        st.write("### 🤖 Παιδαγωγική Αναφορά Φοίβου (AI Expert Report)")
+        if len(st.session_state.user["history"]) >= 2:
+            if st.button("📝 Δημιουργία Νέας Αναφοράς Προόδου", use_container_width=True):
+                with st.spinner("Ο Φοίβος αναλύει την πρόοδο..."):
+                    report = brain.generate_parent_report(
+                        st.session_state.user["history"], 
+                        st.session_state.user["name"], 
+                        st.session_state.user["age"]
+                    )
+                    st.markdown(f"<div class='premium-card' style='border-top: 6px solid #ffc800; background: #fffdf5;'>{report}</div>", unsafe_allow_html=True)
+        else:
+            st.info("💡 Μόλις το παιδί ξεκινήσει να μιλάει με τον Φοίβο, εδώ θα εμφανιστεί η αναλυτική αναφορά προόδου!")
+
         col_chart1, col_chart2 = st.columns(2)
         with col_chart1:
             st.write("### 📊 Παιδαγωγικό Προφίλ")
