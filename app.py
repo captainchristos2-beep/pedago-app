@@ -32,14 +32,12 @@ class AppConfig:
             <style>
             @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
             
-            /* Καθολικό στυλ εφαρμογής (Φωτεινό, καθαρό, χαρούμενο) */
             .stApp { 
                 background-color: #ffffff; 
                 color: #3c3c3c; 
                 font-family: 'Nunito', sans-serif; 
             }
             
-            /* Duolingo Κάρτες με 3D border εφέ */
             .premium-card {
                 background: #ffffff;
                 border: 2px solid #e5e5e5;
@@ -50,7 +48,6 @@ class AppConfig:
                 color: #3c3c3c;
             }
             
-            /* Duolingo XP Μπάρα Προόδου (Κίτρινη/Χρυσή) */
             .duo-progress-container {
                 width: 100%; 
                 background-color: #e5e5e5; 
@@ -65,7 +62,6 @@ class AppConfig:
                 transition: width 0.5s ease-in-out;
             }
             
-            /* Συννεφάκια Λόγου Φοίβου (Duolingo Style) */
             .phoebus-bubble {
                 background: #ffffff; 
                 border: 2px solid #e5e5e5; 
@@ -91,7 +87,6 @@ class AppConfig:
                 width: 100%;
             }
             
-            /* Τίτλοι Ενοτήτων (Γαλάζιο Duolingo) */
             .smart-action-title {
                 font-size: 16px; 
                 font-weight: 900; 
@@ -101,7 +96,6 @@ class AppConfig:
                 margin-bottom: 8px;
             }
             
-            /* Tabs Styling */
             .stTabs [data-baseweb="tab"] {
                 color: #777777 !important;
                 font-weight: 700;
@@ -113,7 +107,7 @@ class AppConfig:
         """, unsafe_allow_html=True)
 
 # =================================================================
-# MODULE 2: VOICE & AUDIO ENGINE (ELEVENLABS UPGRADE)
+# MODULE 2: VOICE & AUDIO ENGINE
 # =================================================================
 class VoiceEngine:
     """Subsystem για Φωνητική Αλληλεπίδραση με ElevenLabs Streaming"""
@@ -126,7 +120,6 @@ class VoiceEngine:
                 st.error("Παρακαλώ ρύθμισε το ELEVENLABS_API_KEY στα Streamlit Secrets.")
                 return
 
-            # Παραγωγή κορυφαίας, φυσικής φωνής στα Ελληνικά (Rachel/Multilingual)
             audio_stream = client.generate(
                 text=text,
                 voice="Rachel", 
@@ -134,7 +127,6 @@ class VoiceEngine:
                 stream=True
             )
 
-            # Συλλογή των audio chunks και μετατροπή σε base64 για autoplay
             audio_bytes = b"".join(audio_stream)
             b64 = base64.b64encode(audio_bytes).decode()
             audio_html = f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
@@ -149,10 +141,9 @@ class VoiceEngine:
         )
 
 # =================================================================
-# MODULE 3: AFFECTIVE & ADAPTIVE AI CORE (THE BRAIN)
+# MODULE 3: AFFECTIVE & ADAPTIVE AI CORE
 # =================================================================
 class PhoebusBrain:
-    """Η Καρδιά του Φοίβου με Συναισθηματική, Ηλικιακή & Γλωσσική Νοημοσύνη"""
     def __init__(self):
         if "GROQ_API_KEY" in st.secrets:
             self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -173,7 +164,6 @@ class PhoebusBrain:
             return {"mood": "Ήρεμος", "energy": 5}
 
     def evaluate_vocabulary(self, child_reply, target_word):
-        """Το AI αξιολογεί live αν το παιδί κατανόησε και χρησιμοποίησε σωστά τη λέξη-στόχο"""
         try:
             prompt = f"""
             Εξέτασε αν το παιδί χρησιμοποίησε ή κατάλαβε τη λέξη-στόχο '{target_word}' στην απάντησή του: '{child_reply}'.
@@ -208,28 +198,30 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: DATA MANAGER & MEMORY (SM-2 IMPLEMENTATION)
+# MODULE 4: DATA MANAGER & MEMORY (WITH PERMANENT SAAS PLANS)
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρηστών, Βάσης Δεδομένων & Αλγορίθμου Μνήμης SM-2"""
+    """Διαχείριση Χρηστών, Μόνιμης Αποθήκευσης Συνδρομών & SM-2"""
     
     @staticmethod
     def init_db():
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
+        # Αναβαθμισμένος πίνακας accounts με στήλη plan μόνιμα συνδεδεμένη με το χρήστη
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
-                username TEXT PRIMARY KEY, password TEXT, role TEXT
+                username TEXT PRIMARY KEY, password TEXT, role TEXT, plan TEXT DEFAULT 'Free'
             )
         """)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_profile (
-                id INTEGER PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, plan TEXT, age INTEGER, onboarded INTEGER
+                username TEXT PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, age INTEGER, onboarded INTEGER
             )
         """)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS word_memory (
-                word TEXT PRIMARY KEY, interval INTEGER, ease_factor REAL, next_review TEXT
+                username TEXT, word TEXT, interval INTEGER, ease_factor REAL, next_review TEXT,
+                PRIMARY KEY (username, word)
             )
         """)
         conn.commit()
@@ -240,7 +232,7 @@ class SessionManager:
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO accounts (username, password, role) VALUES (?, ?, ?)", (username, password, role))
+            cursor.execute("INSERT INTO accounts (username, password, role, plan) VALUES (?, ?, ?, 'Free')", (username, password, role))
             conn.commit()
             return True
         except sqlite3.IntegrityError:
@@ -252,45 +244,53 @@ class SessionManager:
     def authenticate_user(username, password):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT role FROM accounts WHERE username = ? AND password = ?", (username, password))
+        cursor.execute("SELECT role, plan FROM accounts WHERE username = ? AND password = ?", (username, password))
         row = cursor.fetchone()
         conn.close()
-        return row[0] if row else None
+        return row if row else None
 
     @staticmethod
-    def save_to_db(user_data):
+    def save_to_db(username, user_data):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM user_profile WHERE id = 1")
-        cursor.execute("""
-            INSERT INTO user_profile (id, name, xp, level, plan, age, onboarded)
-            VALUES (1, ?, ?, ?, ?, ?, ?)
-        """, (user_data["name"], user_data["xp"], user_data["level"], user_data["plan"], user_data["age"], 1 if user_data["onboarded"] else 0))
+        # Αποθήκευση του πλάνου στον πίνακα των λογαριασμών
+        cursor.execute("UPDATE accounts SET plan = ? WHERE username = ?", (user_data["plan"], username))
+        # Αποθήκευση των στοιχείων του παιδιού
+        cursor.execute("INSERT OR REPLACE INTO user_profile (username, name, xp, level, age, onboarded) VALUES (?, ?, ?, ?, ?, ?)",
+                       (username, user_data["name"], user_data["xp"], user_data["level"], user_data["age"], 1 if user_data["onboarded"] else 0))
         conn.commit()
         conn.close()
 
     @staticmethod
-    def load_from_db():
+    def load_profile_from_db(username, role, plan):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT name, xp, level, plan, age, onboarded FROM user_profile WHERE id = 1")
+        cursor.execute("SELECT name, xp, level, age, onboarded FROM user_profile WHERE username = ?", (username,))
         row = cursor.fetchone()
         conn.close()
+        
+        max_msg = 999999 if plan == "Pro" else 10
+        
         if row:
             return {
-                "name": row[0], "xp": row[1], "level": row[2], "plan": row[3], "age": row[4],
-                "onboarded": True if row[5] == 1 else False,
+                "name": row[0], "xp": row[1], "level": row[2], "plan": plan, "age": row[3],
+                "onboarded": True if row[4] == 1 else False,
                 "history": [], "mood": "Ήρεμος", "mood_history": ["Χαρούμενος", "Ήρεμος"], "xp_history": [10, row[1]],
-                "usage_count": 0, "max_usage": 10, "vocab_bonus": False
+                "usage_count": 0, "max_usage": max_msg
             }
-        return None
+        else:
+            return {
+                "name": "Ήρωας", "xp": 0, "level": 1, "plan": plan, "age": 5,
+                "onboarded": False, "history": [], "mood": "Ήρεμος",
+                "mood_history": ["Ήρεμος"], "xp_history": [0],
+                "usage_count": 0, "max_usage": max_msg
+            }
 
     @staticmethod
-    def update_word_memory(word, quality):
-        """Καθαρή υλοποίηση του αλγορίθμου SuperMemo-2 (SM-2)"""
+    def update_word_memory(username, word, quality):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE word = ?", (word,))
+        cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE username = ? AND word = ?", (username, word))
         row = cursor.fetchone()
         
         if row:
@@ -309,23 +309,16 @@ class SessionManager:
         if ef < 1.3: ef = 1.3
         
         next_date = (datetime.now() + timedelta(days=interval)).strftime("%Y-%m-%d %H:%M")
-        cursor.execute("INSERT OR REPLACE INTO word_memory (word, interval, ease_factor, next_review) VALUES (?, ?, ?, ?)", (word, interval, ef, next_date))
+        cursor.execute("INSERT OR REPLACE INTO word_memory (username, word, interval, ease_factor, next_review) VALUES (?, ?, ?, ?, ?)", 
+                       (username, word, interval, ef, next_date))
         conn.commit()
         conn.close()
 
     @staticmethod
     def initialize():
         SessionManager.init_db()
-        if "user" not in st.session_state:
-            db_user = SessionManager.load_from_db()
-            if db_user: 
-                st.session_state.user = db_user
-            else:
-                st.session_state.user = {
-                    "name": "Ήρωας", "xp": 40, "level": 1, "plan": "Free", "history": [], "mood": "Ήρεμος", "age": 5,
-                    "mood_history": ["Χαρούμενος", "Ήρεμος", "Ενθουσιώδης"], "xp_history": [10, 20, 40],
-                    "onboarded": False, "usage_count": 0, "max_usage": 10, "vocab_bonus": False
-                }
+        if "active_user" not in st.session_state: st.session_state.active_user = None
+        if "user" not in st.session_state: st.session_state.user = None
         if "page" not in st.session_state: st.session_state.page = "login"
         if "current_role" not in st.session_state: st.session_state.current_role = None
 
@@ -334,7 +327,7 @@ class SessionManager:
         st.session_state.user["xp"] += points
         st.session_state.user["xp_history"].append(st.session_state.user["xp"])
         st.session_state.user["level"] = (st.session_state.user["xp"] // 100) + 1
-        SessionManager.save_to_db(st.session_state.user)
+        SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
 
     @staticmethod
     def check_screen_time():
@@ -371,10 +364,10 @@ def render_hud():
 def render_sidebar():
     if st.session_state.page not in ["login", "onboarding"]:
         st.sidebar.title("📌 Φοίβος AI")
-        st.sidebar.info(f"🔑 Ρόλος: **{st.session_state.current_role}**")
+        st.sidebar.info(f"👤 Λογαριασμός: **{st.session_state.active_user}**")
         
         if st.session_state.current_role == "Γονέας":
-            if st.sidebar.button("🗺️ Κόσμοι Περιπέτειας", use_container_width=True): st.session_state.page = "hub"; st.rerun()
+            if st.sidebar.button("🗺️ Κόσμοι Περιπεριπέτειας", use_container_width=True): st.session_state.page = "hub"; st.rerun()
             if st.sidebar.button("🧠 Γλωσσική Μνήμη (SM-2)", use_container_width=True): st.session_state.page = "memory_core"; st.rerun()
             if st.sidebar.button("📊 Στατιστικά Γονέα", use_container_width=True): st.session_state.page = "parent_dashboard"; st.rerun()
             if st.sidebar.button("⚙️ Ρυθμίσεις Προφίλ", use_container_width=True): st.session_state.page = "profile_settings"; st.rerun()
@@ -385,8 +378,9 @@ def render_sidebar():
         st.sidebar.write("---")
         if st.sidebar.button("🚪 Αποσύνδεση", use_container_width=True):
             st.session_state.page = "login"
+            st.session_state.active_user = None
+            st.session_state.user = None
             st.session_state.current_role = None
-            st.session_state.user["history"] = []
             st.rerun()
 
 def main():
@@ -394,6 +388,19 @@ def main():
     SessionManager.initialize()
     render_sidebar()
     brain = PhoebusBrain()
+
+    # --- STRIPE LIVE AD-HOC DETECTION & PERMANENT UPGRADE ---
+    query_params = st.query_params
+    if "payment" in query_params and query_params["payment"] == "success" and st.session_state.active_user:
+        if st.session_state.user:
+            st.session_state.user["plan"] = "Pro"
+            st.session_state.user["max_usage"] = 999999
+            SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
+        st.balloons()
+        st.success("🎉 Η πληρωμή ολοκληρώθηκε μόνιμα! Το προφίλ σας αναβαθμίστηκε σε Pro!")
+        st.query_params.clear()
+        time.sleep(1)
+        st.rerun()
 
     # --- PAGE: LOGIN ---
     if st.session_state.page == "login":
@@ -406,9 +413,13 @@ def main():
             login_user = st.text_input("Όνομα Χρήστη / Email:", key="log_user")
             login_pass = st.text_input("Κωδικός Πρόσβασης:", type="password", key="log_pass")
             if st.button("🚀 Είσοδος", use_container_width=True):
-                role = SessionManager.authenticate_user(login_user, login_pass)
-                if role:
+                auth_result = SessionManager.authenticate_user(login_user, login_pass)
+                if auth_result:
+                    role, plan = auth_result
+                    st.session_state.active_user = login_user
                     st.session_state.current_role = role
+                    st.session_state.user = SessionManager.load_profile_from_db(login_user, role, plan)
+                    
                     st.success(f"Καλώς ορίσατε!")
                     time.sleep(0.5)
                     st.session_state.page = "hub" if role == "Γονέας" and st.session_state.user["onboarded"] else ("onboarding" if role == "Γονέας" else "educator_portal")
@@ -438,7 +449,7 @@ def main():
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
                     st.session_state.user["onboarded"] = True
-                    SessionManager.save_to_db(st.session_state.user)
+                    SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
                     st.session_state.page = "hub"
                     st.rerun()
 
@@ -449,6 +460,18 @@ def main():
         if SessionManager.check_screen_time():
             st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το όριο χρήσης!")
             return
+        
+        # Stripe Checkout Active Integration
+        if st.session_state.user["plan"] == "Free":
+            st.markdown("""
+                <div class="premium-card" style="border-left: 6px solid #1cb0f6; display: flex; justify-content: space-between; align-items: center; background: #e8f7fe;">
+                    <div>
+                        <b style="color: #1cb0f6; font-size: 16px;">💎 Γίνε Μέλος του Φοίβος Pro</b><br>
+                        <span style="color: #555555; font-size: 14px;">Ξεκλειδώστε απεριόριστο χρόνο ομιλίας, βαθύτερη ανίχνευση συναισθημάτων και μόνιμη πρόσβαση χωρίς περιορισμούς!</span>
+                    </div>
+                    <a href="https://buy.stripe.com/5kA6oE736g1Y5JCdQQ" target="_blank" style="text-decoration: none; background: #1cb0f6; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 900; text-transform: uppercase; font-size: 13px; border-bottom: 4px solid #148ec7;">Αναβαθμιση</a>
+                </div>
+            """, unsafe_allow_html=True)
         
         cols = st.columns(3)
         for i, (name, data) in enumerate(AppConfig.THEMES.items()):
@@ -477,7 +500,6 @@ def main():
         if "κουρασμένος" in current_mood or "λυπημένος" in current_mood:
             avatar_icon, bubble_class = ("🧸💤", "phoebus-bubble-tired")
 
-        # Duolingo-style Character Header
         st.markdown(f"""
             <div style="padding: 20px; border-radius: 20px; border: 2px solid #e5e5e5; background: #f7f7f7; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
                 <div style="font-size: 50px; background: white; padding: 10px; border-radius: 50%; border: 2px solid #e5e5e5;">{avatar_icon}</div>
@@ -488,7 +510,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # Διάλογος
         for msg in st.session_state.user["history"]:
             if msg["role"] == "assistant":
                 st.markdown(f'<div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px;"><div class="{bubble_class}"><b>Φοίβος:</b> {msg["content"]}</div></div>', unsafe_allow_html=True)
@@ -500,7 +521,6 @@ def main():
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1
             
-            # 1. Ορισμός λέξης-στόχου ανάλογα με τον κόσμο δυναμικά
             world_words = {
                 "🌿 Πράσινη Εδέμ": "δέντρο",
                 "🏝️ Νησί Γρίφων": "γρίφος",
@@ -509,20 +529,17 @@ def main():
             current_target = world_words.get(world, "λουλούδι")
 
             with st.spinner("Ο Φοίβος σε ακούει..."):
-                # 2. Ανάλυση Συναισθήματος
                 mood_data = brain.analyze_sentiment(user_speech)
                 st.session_state.user["mood"] = mood_data["mood"]
                 st.session_state.user["mood_history"].append(mood_data["mood"])
                 
-                # 3. Παιδαγωγική Αξιολόγηση Λεξιλογίου μέσω LLM
                 quality_score = brain.evaluate_vocabulary(user_speech, current_target)
                 
                 if current_target in user_speech.lower() or quality_score >= 3:
-                    SessionManager.update_word_memory(current_target, quality_score)
-                    st.toast(f"🎯 Η λέξη '{current_target}' αξιολογήθηκε με σκορ {quality_score}/5 και αποθηκεύτηκε στη μνήμη!", icon="🧠")
+                    SessionManager.update_word_memory(st.session_state.active_user, current_target, quality_score)
+                    st.toast(f"🎯 Η λέξη '{current_target}' καταγράφηκε στη μνήμη!", icon="🧠")
                     SessionManager.add_xp(30)
                 
-                # 4. Παραγωγή Απάντησης με ενσωμάτωση της λέξης
                 response = brain.generate_response(
                     st.session_state.user["history"], 
                     mood_data, 
@@ -543,7 +560,7 @@ def main():
         
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT word, interval, ease_factor, next_review FROM word_memory")
+        cursor.execute("SELECT word, interval, ease_factor, next_review FROM word_memory WHERE username = ?", (st.session_state.active_user,))
         rows = cursor.fetchall()
         conn.close()
         
@@ -555,7 +572,7 @@ def main():
             fig_anki.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#3c3c3c'))
             st.plotly_chart(fig_anki, use_container_width=True)
         else: 
-            st.warning("🔒 Καμία λέξη δεν έχει καταγραφεί ακόμα. Μίλησε στον Φοίβο χρησιμοποιώντας λέξεις όπως 'αστέρι' ή 'πλανήτης'.")
+            st.warning("🔒 Καμία λέξη δεν έχει καταγραφεί ακόμα για αυτόν τον λογαριασμό.")
 
     # --- PAGE: PARENT DASHBOARD ---
     elif st.session_state.page == "parent_dashboard":
@@ -594,7 +611,7 @@ def main():
         if st.button("💾 Αποθήκευση", use_container_width=True):
             st.session_state.user["name"] = new_name
             st.session_state.user["age"] = new_age
-            SessionManager.save_to_db(st.session_state.user)
+            SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
             st.success("Οι αλλαγές αποθηκεύτηκαν!")
             st.rerun()
 
