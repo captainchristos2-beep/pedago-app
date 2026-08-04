@@ -505,7 +505,7 @@ def main():
                         <b style="color: #1cb0f6; font-size: 16px;">💎 Γίνε Μέλος του Φοίβος Pro</b><br>
                         <span style="color: #555555; font-size: 14px;">Ξεκλειδώστε απεριόριστο χρόνο ομιλίας, βαθύτερη ανίχνευση συναισθημάτων και μόνιμη πρόσβαση χωρίς περιορισμούς!</span>
                     </div>
-                    <a href="https://buy.stripe.com/5kA6oE736g1Y5JCdQQ" target="_blank" style="text-decoration: none; background: #1cb0f6; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 900; text-transform: uppercase; font-size: 13px; border-bottom: 4px solid #148ec7;">Αναβαθμιση</a>
+                    <a href="https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00" target="_blank" style="text-decoration: none; background: #1cb0f6; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 900; text-transform: uppercase; font-size: 13px; border-bottom: 4px solid #148ec7;">Αναβαθμιση</a>
                 </div>
             """, unsafe_allow_html=True)
         
