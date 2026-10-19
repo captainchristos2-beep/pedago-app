@@ -246,128 +246,181 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS, AUTH & DATA MANAGER (WITH SCHEMA MIGRATIONS)
+# MODULE 4: SAAS, AUTH & DATA MANAGER (SELF-HEALING ARCHITECTURE)
 # =================================================================
 class SessionManager:
     """Relational SQL Database Engine, Accounts, and Spaced Repetition (SM-2)"""
     
     @staticmethod
     def init_db():
-        conn = sqlite3.connect("pedago.db")
-        cursor = conn.cursor()
-        
-        # Accounts Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS accounts (
-                username TEXT PRIMARY KEY,
-                password TEXT,
-                role TEXT
-            )
-        """)
-        
-        # User Profile Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_profile (
-                id INTEGER PRIMARY KEY,
-                name TEXT,
-                xp INTEGER,
-                level INTEGER,
-                plan TEXT,
-                age INTEGER DEFAULT 5,
-                onboarded INTEGER DEFAULT 0
-            )
-        """)
-        
-        # In-place Schema Migration to patch older database instances
-        cursor.execute("PRAGMA table_info(user_profile)")
-        columns = [row[1] for row in cursor.fetchall()]
-        
-        if "age" not in columns:
-            cursor.execute("ALTER TABLE user_profile ADD COLUMN age INTEGER DEFAULT 5")
-        if "onboarded" not in columns:
-            cursor.execute("ALTER TABLE user_profile ADD COLUMN onboarded INTEGER DEFAULT 0")
+        try:
+            conn = sqlite3.connect("pedago.db")
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS accounts (
+                    username TEXT PRIMARY KEY,
+                    password TEXT,
+                    role TEXT
+                )
+            """)
+            
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_profile (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT,
+                    xp INTEGER,
+                    level INTEGER,
+                    plan TEXT,
+                    age INTEGER DEFAULT 5,
+                    onboarded INTEGER DEFAULT 0
+                )
+            """)
+            
+            cursor.execute("PRAGMA table_info(user_profile)")
+            columns = [row[1] for row in cursor.fetchall()]
+            
+            if columns and "age" not in columns:
+                try:
+                    cursor.execute("ALTER TABLE user_profile ADD COLUMN age INTEGER DEFAULT 5")
+                except Exception:
+                    pass
+            if columns and "onboarded" not in columns:
+                try:
+                    cursor.execute("ALTER TABLE user_profile ADD COLUMN onboarded INTEGER DEFAULT 0")
+                except Exception:
+                    pass
 
-        # Word Memory Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS word_memory (
-                word TEXT PRIMARY KEY,
-                interval INTEGER,
-                ease_factor REAL,
-                next_review TEXT
-            )
-        """)
-        conn.commit()
-        conn.close()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS word_memory (
+                    word TEXT PRIMARY KEY,
+                    interval INTEGER,
+                    ease_factor REAL,
+                    next_review TEXT
+                )
+            """)
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
     @staticmethod
     def register_user(username, password, role):
-        conn = sqlite3.connect("pedago.db")
-        cursor = conn.cursor()
         try:
+            conn = sqlite3.connect("pedago.db")
+            cursor = conn.cursor()
             cursor.execute("INSERT INTO accounts (username, password, role) VALUES (?, ?, ?)", (username, password, role))
             conn.commit()
             conn.close()
             return True
-        except sqlite3.IntegrityError:
-            conn.close()
+        except Exception:
             return False
 
     @staticmethod
     def authenticate_user(username, password):
-        conn = sqlite3.connect("pedago.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT role FROM accounts WHERE username = ? AND password = ?", (username, password))
-        row = cursor.fetchone()
-        conn.close()
-        return row[0] if row else None
+        try:
+            conn = sqlite3.connect("pedago.db")
+            cursor = conn.cursor()
+            cursor.execute("SELECT role FROM accounts WHERE username = ? AND password = ?", (username, password))
+            row = cursor.fetchone()
+            conn.close()
+            return row[0] if row else None
+        except Exception:
+            return None
 
     @staticmethod
     def save_to_db(user_data):
-        conn = sqlite3.connect("pedago.db")
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM user_profile WHERE id = 1")
-        cursor.execute("""
-            INSERT INTO user_profile (id, name, xp, level, plan, age, onboarded)
-            VALUES (1, ?, ?, ?, ?, ?, ?)
-        """, (user_data["name"], user_data["xp"], user_data["level"], user_data["plan"], user_data["age"], 1 if user_data["onboarded"] else 0))
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect("pedago.db")
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM user_profile WHERE id = 1")
+            cursor.execute("""
+                INSERT INTO user_profile (id, name, xp, level, plan, age, onboarded)
+                VALUES (1, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_data.get("name", "Alex"),
+                user_data.get("xp", 40),
+                user_data.get("level", 1),
+                user_data.get("plan", "Free"),
+                user_data.get("age", 5),
+                1 if user_data.get("onboarded", False) else 0
+            ))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
     @staticmethod
     def load_from_db():
-        conn = sqlite3.connect("pedago.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT name, xp, level, plan, age, onboarded FROM user_profile WHERE id = 1")
-        row = cursor.fetchone()
-        conn.close()
-        if row:
-            return {
-                "name": row[0], "xp": row[1], "level": row[2], "plan": row[3], "age": row[4],
-                "onboarded": True if row[5] == 1 else False,
-                "history": [], "mood": "Calm / Ήρεμος", "mood_history": ["Calm / Ήρεμος"], "xp_history": [10, row[1]],
-                "usage_count": 0, "max_usage": 3, "vocab_bonus": False
-            }
+        try:
+            conn = sqlite3.connect("pedago.db")
+            cursor = conn.cursor()
+            cursor.execute("SELECT name, xp, level, plan, age, onboarded FROM user_profile WHERE id = 1")
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                return {
+                    "name": row[0],
+                    "xp": row[1] if row[1] is not None else 40,
+                    "level": row[2] if row[2] is not None else 1,
+                    "plan": row[3] if row[3] is not None else "Free",
+                    "age": row[4] if len(row) > 4 and row[4] is not None else 5,
+                    "onboarded": True if len(row) > 5 and row[5] == 1 else False,
+                    "history": [],
+                    "mood": "Calm / Ήρεμος",
+                    "mood_history": ["Calm / Ήρεμος"],
+                    "xp_history": [10, row[1] if row[1] is not None else 40],
+                    "usage_count": 0,
+                    "max_usage": 3,
+                    "vocab_bonus": False
+                }
+        except Exception:
+            try:
+                conn = sqlite3.connect("pedago.db")
+                cursor = conn.cursor()
+                cursor.execute("DROP TABLE IF EXISTS user_profile")
+                cursor.execute("""
+                    CREATE TABLE user_profile (
+                        id INTEGER PRIMARY KEY,
+                        name TEXT,
+                        xp INTEGER,
+                        level INTEGER,
+                        plan TEXT,
+                        age INTEGER DEFAULT 5,
+                        onboarded INTEGER DEFAULT 0
+                    )
+                """)
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass
         return None
 
     @staticmethod
     def update_word_memory(word, quality):
-        conn = sqlite3.connect("pedago.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE word = ?", (word,))
-        row = cursor.fetchone()
-        if row: interval, ef = row[0], row[1]
-        else: interval, ef = 1, 2.5
-        if quality >= 3:
-            if interval == 1: interval = 2
-            elif interval == 2: interval = 4
-            else: interval = int(interval * ef)
-        else: interval = 1
-        ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-        if ef < 1.3: ef = 1.3
-        next_date = (datetime.now() + timedelta(days=interval)).strftime("%Y-%m-%d %H:%M")
-        cursor.execute("INSERT OR REPLACE INTO word_memory (word, interval, ease_factor, next_review) VALUES (?, ?, ?, ?)", (word, interval, ef, next_date))
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect("pedago.db")
+            cursor = conn.cursor()
+            cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE word = ?", (word,))
+            row = cursor.fetchone()
+            if row:
+                interval, ef = row[0], row[1]
+            else:
+                interval, ef = 1, 2.5
+            if quality >= 3:
+                if interval == 1: interval = 2
+                elif interval == 2: interval = 4
+                else: interval = int(interval * ef)
+            else:
+                interval = 1
+            ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+            if ef < 1.3: ef = 1.3
+            next_date = (datetime.now() + timedelta(days=interval)).strftime("%Y-%m-%d %H:%M")
+            cursor.execute("INSERT OR REPLACE INTO word_memory (word, interval, ease_factor, next_review) VALUES (?, ?, ?, ?)", (word, interval, ef, next_date))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
     @staticmethod
     def initialize():
@@ -376,15 +429,28 @@ class SessionManager:
             st.session_state.lang = "EL"
         if "user" not in st.session_state:
             db_user = SessionManager.load_from_db()
-            if db_user: st.session_state.user = db_user
+            if db_user:
+                st.session_state.user = db_user
             else:
                 st.session_state.user = {
-                    "name": "Alex", "xp": 40, "level": 1, "plan": "Free", "history": [], "mood": "Calm / Ήρεμος", "age": 5,
-                    "mood_history": ["Calm / Ήρεμος"], "xp_history": [10, 20, 40],
-                    "onboarded": False, "usage_count": 0, "max_usage": 3, "vocab_bonus": False
+                    "name": "Alex",
+                    "xp": 40,
+                    "level": 1,
+                    "plan": "Free",
+                    "history": [],
+                    "mood": "Calm / Ήρεμος",
+                    "age": 5,
+                    "mood_history": ["Calm / Ήρεμος"],
+                    "xp_history": [10, 20, 40],
+                    "onboarded": False,
+                    "usage_count": 0,
+                    "max_usage": 3,
+                    "vocab_bonus": False
                 }
-        if "page" not in st.session_state: st.session_state.page = "login"
-        if "current_role" not in st.session_state: st.session_state.current_role = None
+        if "page" not in st.session_state:
+            st.session_state.page = "login"
+        if "current_role" not in st.session_state:
+            st.session_state.current_role = None
 
     @staticmethod
     def add_xp(points):
@@ -395,7 +461,8 @@ class SessionManager:
 
     @staticmethod
     def check_screen_time():
-        if st.session_state.user["plan"] == "Free" and st.session_state.user["usage_count"] >= st.session_state.user["max_usage"]: return True
+        if st.session_state.user["plan"] == "Free" and st.session_state.user["usage_count"] >= st.session_state.user["max_usage"]:
+            return True
         return False
 
 # =================================================================
