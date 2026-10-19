@@ -246,17 +246,56 @@ class PhoebusBrain:
         return response.choices[0].message.content
 
 # =================================================================
-# MODULE 4: SAAS, AUTH & DATA MANAGER
+# MODULE 4: SAAS, AUTH & DATA MANAGER (WITH SCHEMA MIGRATIONS)
 # =================================================================
 class SessionManager:
     """Relational SQL Database Engine, Accounts, and Spaced Repetition (SM-2)"""
+    
     @staticmethod
     def init_db():
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS accounts (username TEXT PRIMARY KEY, password TEXT, role TEXT)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS user_profile (id INTEGER PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, plan TEXT, age INTEGER, onboarded INTEGER)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS word_memory (word TEXT PRIMARY KEY, interval INTEGER, ease_factor REAL, next_review TEXT)")
+        
+        # Accounts Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS accounts (
+                username TEXT PRIMARY KEY,
+                password TEXT,
+                role TEXT
+            )
+        """)
+        
+        # User Profile Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_profile (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                xp INTEGER,
+                level INTEGER,
+                plan TEXT,
+                age INTEGER DEFAULT 5,
+                onboarded INTEGER DEFAULT 0
+            )
+        """)
+        
+        # In-place Schema Migration to patch older database instances
+        cursor.execute("PRAGMA table_info(user_profile)")
+        columns = [row[1] for row in cursor.fetchall()]
+        
+        if "age" not in columns:
+            cursor.execute("ALTER TABLE user_profile ADD COLUMN age INTEGER DEFAULT 5")
+        if "onboarded" not in columns:
+            cursor.execute("ALTER TABLE user_profile ADD COLUMN onboarded INTEGER DEFAULT 0")
+
+        # Word Memory Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS word_memory (
+                word TEXT PRIMARY KEY,
+                interval INTEGER,
+                ease_factor REAL,
+                next_review TEXT
+            )
+        """)
         conn.commit()
         conn.close()
 
