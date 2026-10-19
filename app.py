@@ -8,260 +8,255 @@ import json
 import sqlite3
 from datetime import datetime, timedelta
 from groq import Groq
-from elevenlabs.client import ElevenLabs
+from gtts import gTTS
 from streamlit_mic_recorder import speech_to_text
 
 # =================================================================
-# MODULE 1: GLOBAL CONFIGURATION, THEMES & DUOLINGO PREMIUM CSS
+# MODULE 1: GLOBAL CONFIGURATION, LOCALIZATION & PREMIUM STYLES
 # =================================================================
 class AppConfig:
-    """Ρυθμίσεις Συστήματος & Οπτική Ταυτότητα (Duolingo Gamified Design)"""
-    TITLE = "Φοίβος AI Μέντορας v10.0"
-    VERSION = "Build 2026.OmnibusCore"
-    
+    """System Architecture & International Dual-Core Localization"""
+    TITLE = "PedaGO Sovereign v10.5"
+    VERSION = "Build 2026.InternationalCore"
+
+    # Localization Dictionary
+    TRANSLATIONS = {
+        "EL": {
+            "title_sub": "Η δική σου Πρωινή Εδέμ περιμένει!",
+            "banner_h": "✨ ΠΛΑΤΦΟΡΜΑ ΕΚΠΑΙΔΕΥΤΙΚΗΣ ΤΕΧΝΟΛΟΓΙΑΣ",
+            "banner_p": "Ολοκληρωμένο περιβάλλον αλληλεπίδρασης και μάθησης.",
+            "tab_login": "🔑 Σύνδεση Χρήστη",
+            "tab_register": "📝 Δημιουργία Προφίλ",
+            "username": "Όνομα Χρήστη (Email / Username):",
+            "password": "Κωδικός Πρόσβασης:",
+            "btn_login": "🚀 Είσοδος",
+            "btn_register": "📝 Ολοκλήρωση Εγγραφής",
+            "role_select": "Επιλέξτε τον Ρόλο σας:",
+            "role_parent": "Γονέας",
+            "role_teacher": "Εκπαιδευτικός",
+            "login_success": "Επιτυχής σύνδεση ως",
+            "login_fail": "❌ Λανθασμένα στοιχεία σύνδεσης!",
+            "reg_success": "🎉 Ο λογαριασμός δημιουργήθηκε επιτυχώς!",
+            "reg_fail": "❌ Το όνομα χρήστη χρησιμοποιείται ήδη.",
+            "fill_fields": "💡 Παρακαλώ συμπληρώστε όλα τα πεδία!",
+            "onboard_title": "👋 Δημιουργία Προφίλ Παιδιού",
+            "onboard_sub": "Συνδέστε αυτόματα τον λογαριασμό γονέα με τον μικρό εξερευνητή.",
+            "child_name": "Όνομα Παιδιού:",
+            "child_age": "Ηλικία Παιδιού:",
+            "btn_start": "🚀 Δημιουργία & Σύνδεση!",
+            "level": "ΕΠΙΠΕΔΟ",
+            "xp_label": "XP",
+            "child_prof": "Προφίλ Παιδιού:",
+            "mood_label": "Διάθεση:",
+            "msgs_label": "Μηνύματα:",
+            "plan_label": "Πλάνο:",
+            "nav_title": "📌 PedaGO Dashboard",
+            "active_role": "🔑 Ενεργός Ρόλος:",
+            "btn_worlds": "🗺️ Κόσμοι & Περιπέτεια (Παιδί)",
+            "btn_memory": "🧠 Γλωσσική Μνήμη",
+            "btn_parent": "📊 Dashboard Γονέα & Analytics",
+            "btn_settings": "⚙️ Ρυθμίσεις Προφίλ",
+            "btn_portal": "🏫 Educator Portal (B2B)",
+            "btn_logout": "🚪 Αποσύνδεση",
+            "screen_guard": "⏰ Screen Time Guard: Συμπληρώθηκε το ημερήσιο όριο χρήσης!",
+            "stripe_text": "💎 Pro Plan Upgrade: Ξεκλειδώστε απεριόριστο χρόνο ομιλίας και τα πλήρη Affective AI Analytics!",
+            "stripe_btn": "Ενεργοποίηση Pro (9.99€/μήνα)",
+            "vocab_challenge": "🎯 Vocabulary Challenge: Χρησιμοποίησε τη λέξη 'αστέρι' και κέρδισε +50 XP!",
+            "change_world": "↩️ Αλλαγή Κόσμου",
+            "listen_prompt": "🎤 Πάτα & Μίλησε στον Φοίβο",
+            "stop_prompt": "🛑 Σταμάτα",
+            "phoebus_listening": "Ο Φοίβος σε ακούει...",
+            "target_word": "αστέρι",
+            "stt_lang": "el",
+            "tts_lang": "el",
+            "beebot_caption": "🤖 Προαιρετική Σύνδεση με Εκπαιδευτική Ρομποτική (BeeBot Hybrid Mod Active)",
+            "magic_tag": "🔮 MagicSchool Active Engine",
+            "magic_desc": "Διαφοροποιημένη Διδασκαλία • Ηλικιακό Προφίλ: {age} ετών • Μέθοδος: Σωκρατική Γνωστική Σκαλωσιά"
+        },
+        "EN": {
+            "title_sub": "Your personalized AI Learning Sanctuary awaits!",
+            "banner_h": "✨ NEXT-GEN EDTECH PLATFORM",
+            "banner_p": "Integrated affective computing and multimodal learning interface.",
+            "tab_login": "🔑 User Login",
+            "tab_register": "📝 Register Profile",
+            "username": "Username / Email:",
+            "password": "Password:",
+            "btn_login": "🚀 Sign In",
+            "btn_register": "📝 Complete Registration",
+            "role_select": "Select Your Role:",
+            "role_parent": "Parent",
+            "role_teacher": "Educator",
+            "login_success": "Successfully authenticated as",
+            "login_fail": "❌ Invalid credentials!",
+            "reg_success": "🎉 Account successfully created!",
+            "reg_fail": "❌ Username already exists.",
+            "fill_fields": "💡 Please fill in all fields!",
+            "onboard_title": "👋 Student Profile Initialization",
+            "onboard_sub": "Seamlessly link parent account to child's conversational agent.",
+            "child_name": "Child's Name:",
+            "child_age": "Child's Age:",
+            "btn_start": "🚀 Initialize & Launch!",
+            "level": "LEVEL",
+            "xp_label": "XP",
+            "child_prof": "Student:",
+            "mood_label": "Mood:",
+            "msgs_label": "Messages:",
+            "plan_label": "Tier:",
+            "nav_title": "📌 Navigation Suite",
+            "active_role": "🔑 Active Role:",
+            "btn_worlds": "🗺️ Worlds & Adventure (Child)",
+            "btn_memory": "🧠 Language Memory Engine",
+            "btn_parent": "📊 Parent Analytics Dashboard",
+            "btn_settings": "⚙️ Profile Settings",
+            "btn_portal": "🏫 Educator Portal (B2B)",
+            "btn_logout": "🚪 Sign Out",
+            "screen_guard": "⏰ Screen Time Guard: Daily usage limit reached!",
+            "stripe_text": "💎 Pro Plan Upgrade: Unlock unlimited voice runtime and complete Affective AI Analytics!",
+            "stripe_btn": "Activate Pro (€9.99/mo)",
+            "vocab_challenge": "🎯 Vocabulary Challenge: Use the word 'star' to gain +50 XP Bonus!",
+            "change_world": "↩️ Change World",
+            "listen_prompt": "🎤 Press & Speak to Phoebus",
+            "stop_prompt": "🛑 Stop",
+            "phoebus_listening": "Phoebus is listening carefully...",
+            "target_word": "star",
+            "stt_lang": "en",
+            "tts_lang": "en",
+            "beebot_caption": "🤖 Optional Educational Robotics Bridge (BeeBot Hybrid Mod Active)",
+            "magic_tag": "🔮 MagicSchool Engine Active",
+            "magic_desc": "Differentiated Instruction • Age Cohort: {age} yo • Method: Socratic Cognitive Scaffolding"
+        }
+    }
+
     THEMES = {
-        "🌿 Πράσινη Εδέμ": {
-            "color": "#58cc02", 
-            "icon": "🌿", 
-            "prompt": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα, στοργικά και ενθαρρυντικά με απλά λόγια σαν γλυκός παιδαγωγός. Κάνε ερωτήσεις για τη φύση, τα ζώα και τα φυτά.", 
-            "bg": "#eefced", 
-            "accent": "#58cc02",
-            "suggested_questions": ["Πώς λένε το αγαπημένο σου ζωάκι;", "Τι χρώμα έχουν τα φύλλα στα δέντρα;", "Έχεις δει ποτέ μια όμορφη πασχαλίτσα;"]
+        "Εδέμ Πρωί": {
+            "name_en": "Morning Eden", "color": "#10b981", "icon": "🌿",
+            "prompt_el": "Είσαι στον Παράδεισο της Εδέμ. Μίλα ήρεμα και ενθαρρυντικά με απλά λόγια.",
+            "prompt_en": "You are in the Paradise of Eden. Speak gently and encouragingly using simple, nurturing words.",
+            "bg": "linear-gradient(135deg, #064e3b, #022c22)"
         },
-        "🏝️ Νησί Γρίφων": {
-            "color": "#ff9600", 
-            "icon": "🏝️", 
-            "prompt": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα, έξυπνα παιχνίδια λέξεων και Σωκρατική μέθοδο κατάλληλη για παιδιά. Προκάλεσέ τα να λύσουν ένα μυστήριο.", 
-            "bg": "#fef5e7", 
-            "accent": "#ff9600",
-            "suggested_questions": ["Τι έχει τέσσερα πόδια αλλά δεν μπορεί να περπατήσει;", "Ποιο ζωάκι κάνει 'νιάου' και του αρέσει το γάλα;", "Τι είναι αυτό που ανεβαίνει αλλά δεν κατεβαίνει ποτέ;"]
+        "Νησί Γρίφων": {
+            "name_en": "Riddle Island", "color": "#f59e0b", "icon": "🏝️",
+            "prompt_el": "Είσαι στο Νησί των Γρίφων. Μίλα με αινίγματα και Σωκρατική μέθοδο.",
+            "prompt_en": "You are on Riddle Island. Challenge the child with curious questions, playful riddles, and Socratic guidance.",
+            "bg": "linear-gradient(135deg, #78350f, #451a03)"
         },
-        "🚀 Διάστημα": {
-            "color": "#1cb0f6", 
-            "icon": "🚀", 
-            "prompt": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες, πυραύλους και εξερεύνηση με μεγάλο ενθουσιασμό.", 
-            "bg": "#e8f7fe", 
-            "accent": "#1cb0f6",
-            "suggested_questions": ["Πώς θα ονόμαζες τον δικό σου πύραυλο;", "Ποιος πλανήτης σου αρέσει πιο πολύ;", "Αν συναντούσες έναν εξωγήινο, τι θα του έλεγες;"]
+        "Διάστημα": {
+            "name_en": "Deep Space", "color": "#6366f1", "icon": "🚀",
+            "prompt_el": "Είσαι στο Διάστημα. Μίλα για αστέρια, πλανήτες και εξερεύνηση.",
+            "prompt_en": "You are in Deep Space. Talk about stars, planets, and cosmic exploration with infectious excitement.",
+            "bg": "linear-gradient(135deg, #1e1b4b, #0f172a)"
         }
     }
 
     @staticmethod
     def inject_premium_styles():
-        """Έγχυση CSS για το Duolingo Playful & Gamified Design System"""
         st.markdown("""
             <style>
             @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-            
-            .stApp { 
-                background-color: #ffffff; 
-                color: #3c3c3c; 
-                font-family: 'Nunito', sans-serif; 
-            }
-            
+            .stApp { background-color: #0b0f19; color: #f1f5f9; font-family: 'Nunito', sans-serif; }
             .premium-card {
-                background: #ffffff;
-                border: 2px solid #e5e5e5;
-                border-bottom: 4px solid #e5e5e5;
+                background: rgba(30, 41, 59, 0.45);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
                 padding: 24px;
-                border-radius: 16px;
+                border-radius: 20px;
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
                 margin-bottom: 20px;
-                color: #3c3c3c;
             }
-            
             .duo-progress-container {
-                width: 100%; 
-                background-color: #e5e5e5; 
-                border-radius: 16px; 
-                padding: 4px; 
-                margin: 10px 0px;
+                width: 100%; background-color: #1e293b; border-radius: 12px; padding: 3px; border: 1px solid #334155; margin: 10px 0px;
             }
             .duo-progress-bar {
-                height: 16px; 
-                background: #ffc800; 
-                border-radius: 12px; 
-                transition: width 0.5s ease-in-out;
+                height: 16px; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 9px; transition: width 0.5s ease-in-out;
             }
-            
             .phoebus-bubble {
-                background: #ffffff; 
-                border: 2px solid #e5e5e5; 
-                border-bottom: 4px solid #e5e5e5;
-                padding: 18px; 
-                border-radius: 18px; 
-                margin: 12px 0px; 
-                color: #3c3c3c;
-                font-size: 16px;
-                font-weight: 700;
-                width: 100%;
+                background: rgba(30, 41, 59, 0.7); border-left: 5px solid #10b981; padding: 18px; border-radius: 4px 20px 20px 20px; margin: 12px 0px; color: #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             }
-            
-            .suggestion-chip {
-                background-color: #f1f1f1;
-                border: 2px solid #e5e5e5;
-                border-radius: 20px;
-                padding: 8px 16px;
-                margin: 5px;
-                display: inline-block;
-                cursor: pointer;
-                font-weight: bold;
-                color: #4b4b4b;
-                transition: all 0.2s ease;
+            .phoebus-bubble-tired {
+                background: rgba(30, 41, 59, 0.7); border-left: 5px solid #3b82f6; padding: 18px; border-radius: 4px 20px 20px 20px; margin: 12px 0px; color: #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             }
-            .suggestion-chip:hover {
-                background-color: #e5e5e5;
-                transform: scale(1.03);
-            }
-            
-            .stTabs [data-baseweb="tab"] {
-                color: #777777 !important;
-                font-weight: 700;
-            }
-            .stTabs [data-baseweb="tab"][aria-selected="true"] {
-                color: #1cb0f6 !important;
+            .smart-action-title {
+                font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #6366f1; margin-bottom: 8px;
             }
             </style>
         """, unsafe_allow_html=True)
 
 # =================================================================
-# MODULE 2: VOICE & AUDIO ENGINE
+# MODULE 2: ADAPTIVE VOICE & AUDIO ENGINE
 # =================================================================
 class VoiceEngine:
-    """Subsystem για Φωνητική Αλληλεπίδραση με ElevenLabs Streaming"""
+    """Subsystem for Dynamic STT / TTS Locale Adaptation"""
     @staticmethod
-    def speak(text):
+    def speak(text, lang='el'):
         try:
-            if "ELEVENLABS_API_KEY" in st.secrets:
-                client = ElevenLabs(api_key=st.secrets["ELEVENLABS_API_KEY"])
-            else:
-                st.error("Παρακαλώ ρύθμισε το ELEVENLABS_API_KEY στα Streamlit Secrets.")
-                return
-
-            audio_stream = client.generate(
-                text=text,
-                voice="Rachel", 
-                model="eleven_multilingual_v2", 
-                stream=True
-            )
-
-            audio_bytes = b"".join(audio_stream)
-            b64 = base64.b64encode(audio_bytes).decode()
+            tts = gTTS(text=text, lang=lang)
+            fp = io.BytesIO()
+            tts.write_to_fp(fp)
+            fp.seek(0)
+            b64 = base64.b64encode(fp.read()).decode()
             audio_html = f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
             st.markdown(audio_html, unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"ElevenLabs TTS Error: {e}")
+            st.error(f"TTS Engine Error: {e}")
 
     @staticmethod
-    def listen():
+    def listen(t):
         return speech_to_text(
-            language='el', start_prompt="🎤 Μίλησε στον Φοίβο", stop_prompt="🛑 Σταμάτα", just_once=True, key='STT_Component'
+            language=t["stt_lang"],
+            start_prompt=t["listen_prompt"],
+            stop_prompt=t["stop_prompt"],
+            just_once=True,
+            key='STT_Component'
         )
 
 # =================================================================
-# MODULE 3: AFFECTIVE & ADAPTIVE AI CORE
+# MODULE 3: AFFECTIVE & MULTILINGUAL AI CORE
 # =================================================================
 class PhoebusBrain:
+    """Emotionally Intelligent & Multilingual Groq Core"""
     def __init__(self):
-        if "GROQ_API_KEY" in st.secrets:
-            self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+    def analyze_sentiment(self, text, lang="EL"):
+        prompt = f"Analyze child sentiment in this utterance: '{text}'. Language is {lang}. Return valid JSON: {{\"mood\": \"happy/sad/tired/calm\", \"energy\": 1-10}}"
+        response = self.client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": "You are an expert pediatric psychologist."},
+                      {"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
+        )
+        return json.loads(response.choices[0].message.content)
+
+    def generate_response(self, history, mood_context, world_key, child_age, lang="EL"):
+        theme_info = AppConfig.THEMES[world_key]
+        world_prompt = theme_info["prompt_en"] if lang == "EN" else theme_info["prompt_el"]
+        
+        if lang == "EN":
+            age_instruction = "The child is in preschool (4yo), use simple sentences up to 5 words." if child_age <= 4 else "The child is 5-6yo, foster expressive responses and Socratic inquiry."
+            full_prompt = f"{world_prompt} The child currently seems {mood_context.get('mood', 'calm')}. {age_instruction} Maintain an encouraging, warm pedagogical tone in fluent English."
         else:
-            st.error("Παρακαλώ ρύθμισε το GROQ_API_KEY στα Streamlit Secrets.")
-
-    def analyze_sentiment(self, text):
-        try:
-            prompt = f"Analyze child sentiment: '{text}'. Return STRICTLY a JSON object: {{'mood': 'χαρούμενος' or 'λυπημένος' or 'κουρασμένος', 'energy': 1-10}}"
-            response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": "You are a child psychologist. Respond ONLY with JSON."},
-                          {"role": "user", "content": prompt}],
-                response_format={"type": "json_object"}
-            )
-            return json.loads(response.choices[0].message.content)
-        except Exception:
-            return {"mood": "Ήρεμος", "energy": 5}
-
-    def evaluate_vocabulary(self, child_reply, target_word):
-        try:
-            prompt = f"""
-            Εξέτασε αν το παιδί χρησιμοποίησε ή κατάλαβε τη λέξη-στόχο '{target_word}' στην απάντησή του: '{child_reply}'.
-            Βαθμολόγησε την ποιότητα ανάκλησης (quality) από 0 έως 5:
-            5 - Τέλεια χρήση και κατανόηση της λέξης.
-            3 - Σωστή χρήση αλλά με καθοδήγηση.
-            1 - Πλήρης παρανόηση ή αποτυχία χρήσης της λέξης.
-            Επίστρεψε ΑΥΣΤΗΡΑ ένα JSON object: {{"quality": 0-5}}
-            """
-            response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": "You are a linguistic educator. Respond ONLY with JSON."},
-                          {"role": "user", "content": prompt}],
-                response_format={"type": "json_object"}
-            )
-            data = json.loads(response.choices[0].message.content)
-            return int(data.get("quality", 3))
-        except Exception:
-            return 3
-
-    def generate_response(self, history, mood_context, world_prompt, child_age, target_word):
-        if child_age <= 4:
-            age_instruction = f"Το παιδί είναι προ-νήπιο (4 ετών). Χρησιμοποίησε πολύ απλές, μικρές προτάσεις έως 5-6 λέξεις. Προσπάθησε να εισάγεις με πολύ απλό τρόπο τη λέξη-στόχο: '{target_word}'."
-        else:
-            age_instruction = f"Το παιδί είναι νήπιο/πρωτοσχολικό (5-6 ετών+). Ενθάρρυνε σύνθετες απαντήσεις, χτίσε γνωστική σκαλωσιά και προκάλεσέ το να χρησιμοποιήσει στην απάντησή του τη λέξη-στόχο: '{target_word}'."
+            age_instruction = "Το παιδί είναι προ-νήπιο (4 ετών), χρησιμοποίησε πολύ απλές, μικρές προτάσεις έως 5 λέξεις." if child_age <= 4 else "Το παιδί είναι νήπιο (5-6 ετών), ενθάρρυνε σύνθετες απαντήσεις και κριτική σκέψη."
+            full_prompt = f"{world_prompt} Το παιδί νιώθει {mood_context.get('mood', 'ήρεμο')}. {age_instruction} Προσάρμοσε τον τόνο σου ακαδημαϊκά και παιδαγωγικά στα Ελληνικά."
             
-        full_prompt = f"{world_prompt}\nΤο παιδί νιώθει {mood_context['mood']}.\n{age_instruction}\nΜίλα στα Ελληνικά με καθαρό, παιδικό και ζεστό ύφος, χωρίς να αναφέρεις τη λέξη 'στόχος' ή 'οδηγία'."
         messages = [{"role": "system", "content": full_prompt}] + history
         response = self.client.chat.completions.create(
             model="llama-3.3-70b-versatile", messages=messages, temperature=0.7
         )
         return response.choices[0].message.content
 
-    def generate_parent_report(self, history, child_name, child_age):
-        """Δημιουργεί μια ολοκληρωμένη και συγκινητική παιδαγωγική αναφορά για τον γονέα"""
-        try:
-            prompt = f"""
-            Με βάση τον παρακάτω διάλογο του παιδιού ({child_name}, {child_age} ετών) με τον Φοίβο, γράψε μια όμορφη, ενθαρρυντική και αναλυτική αναφορά προόδου για τον γονέα.
-            Οργάνωσε την αναφορά σε:
-            1. 🌟 Σημερινά Επιτεύγματα (ποιες λέξεις χρησιμοποίησε, πώς εκφράστηκε).
-            2. 🎭 Συναισθηματική Εικόνα (τι διάθεση έδειξε κατά τη διάρκεια του παιχνιδιού).
-            3. 💡 Παιδαγωγικές Συμβουλές (τι παιχνίδι ή συζήτηση προτείνει ο Φοίβος να κάνουν μαζί στο σπίτι σήμερα).
-            Διάλογος:
-            {json.dumps(history, ensure_ascii=False)}
-            Απάντησε στα Ελληνικά, με ζεστό, επαγγελματικό παιδαγωγικό ύφος.
-            """
-            response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": "You are a senior child developmental psychologist and speech therapist."},
-                          {"role": "user", "content": prompt}]
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            return f"Δεν κατέστη δυνατή η δημιουργία της αναφοράς αυτή τη στιγμή: {e}"
-
 # =================================================================
-# MODULE 4: DATA MANAGER & MEMORY (WITH PERMANENT SAAS PLANS)
+# MODULE 4: SAAS, AUTH & DATA MANAGER
 # =================================================================
 class SessionManager:
-    """Διαχείριση Χρηστών, Μόνιμης Αποθήκευσης Συνδρομών & SM-2"""
-    
+    """Relational SQL Database Engine, Accounts, and Spaced Repetition (SM-2)"""
     @staticmethod
     def init_db():
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS accounts (
-                username TEXT PRIMARY KEY, password TEXT, role TEXT, plan TEXT DEFAULT 'Free'
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_profile (
-                username TEXT PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, age INTEGER, onboarded INTEGER
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS word_memory (
-                username TEXT, word TEXT, interval INTEGER, ease_factor REAL, next_review TEXT,
-                PRIMARY KEY (username, word)
-            )
-        """)
+        cursor.execute("CREATE TABLE IF NOT EXISTS accounts (username TEXT PRIMARY KEY, password TEXT, role TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS user_profile (id INTEGER PRIMARY KEY, name TEXT, xp INTEGER, level INTEGER, plan TEXT, age INTEGER, onboarded INTEGER)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS word_memory (word TEXT PRIMARY KEY, interval INTEGER, ease_factor REAL, next_review TEXT)")
         conn.commit()
         conn.close()
 
@@ -270,91 +265,85 @@ class SessionManager:
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO accounts (username, password, role, plan) VALUES (?, ?, ?, 'Free')", (username, password, role))
+            cursor.execute("INSERT INTO accounts (username, password, role) VALUES (?, ?, ?)", (username, password, role))
             conn.commit()
+            conn.close()
             return True
         except sqlite3.IntegrityError:
-            return False
-        finally:
             conn.close()
+            return False
 
     @staticmethod
     def authenticate_user(username, password):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT role, plan FROM accounts WHERE username = ? AND password = ?", (username, password))
+        cursor.execute("SELECT role FROM accounts WHERE username = ? AND password = ?", (username, password))
         row = cursor.fetchone()
         conn.close()
-        return row if row else None
+        return row[0] if row else None
 
     @staticmethod
-    def save_to_db(username, user_data):
+    def save_to_db(user_data):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("UPDATE accounts SET plan = ? WHERE username = ?", (user_data["plan"], username))
-        cursor.execute("INSERT OR REPLACE INTO user_profile (username, name, xp, level, age, onboarded) VALUES (?, ?, ?, ?, ?, ?)",
-                       (username, user_data["name"], user_data["xp"], user_data["level"], user_data["age"], 1 if user_data["onboarded"] else 0))
+        cursor.execute("DELETE FROM user_profile WHERE id = 1")
+        cursor.execute("""
+            INSERT INTO user_profile (id, name, xp, level, plan, age, onboarded)
+            VALUES (1, ?, ?, ?, ?, ?, ?)
+        """, (user_data["name"], user_data["xp"], user_data["level"], user_data["plan"], user_data["age"], 1 if user_data["onboarded"] else 0))
         conn.commit()
         conn.close()
 
     @staticmethod
-    def load_profile_from_db(username, role, plan):
+    def load_from_db():
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT name, xp, level, age, onboarded FROM user_profile WHERE username = ?", (username,))
+        cursor.execute("SELECT name, xp, level, plan, age, onboarded FROM user_profile WHERE id = 1")
         row = cursor.fetchone()
         conn.close()
-        
-        max_msg = 999999 if plan == "Pro" else 10
-        
         if row:
             return {
-                "name": row[0], "xp": row[1], "level": row[2], "plan": plan, "age": row[3],
-                "onboarded": True if row[4] == 1 else False,
-                "history": [], "mood": "Ήρεμος", "mood_history": ["Χαρούμενος", "Ήρεμος"], "xp_history": [10, row[1]],
-                "usage_count": 0, "max_usage": max_msg
+                "name": row[0], "xp": row[1], "level": row[2], "plan": row[3], "age": row[4],
+                "onboarded": True if row[5] == 1 else False,
+                "history": [], "mood": "Calm / Ήρεμος", "mood_history": ["Calm / Ήρεμος"], "xp_history": [10, row[1]],
+                "usage_count": 0, "max_usage": 3, "vocab_bonus": False
             }
-        else:
-            return {
-                "name": "Ήρωας", "xp": 0, "level": 1, "plan": plan, "age": 5,
-                "onboarded": False, "history": [], "mood": "Ήρεμος",
-                "mood_history": ["Ήρεμος"], "xp_history": [0],
-                "usage_count": 0, "max_usage": max_msg
-            }
+        return None
 
     @staticmethod
-    def update_word_memory(username, word, quality):
+    def update_word_memory(word, quality):
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE username = ? AND word = ?", (username, word))
+        cursor.execute("SELECT interval, ease_factor FROM word_memory WHERE word = ?", (word,))
         row = cursor.fetchone()
-        
-        if row:
-            interval, ef = row[0], row[1]
-            if quality >= 3:
-                if interval == 1: interval = 6
-                elif interval == 6: interval = 12
-                else: interval = int(interval * ef)
-            else:
-                interval = 1
-        else:
-            ef = 2.5
-            interval = 1 if quality < 3 else 6
-
+        if row: interval, ef = row[0], row[1]
+        else: interval, ef = 1, 2.5
+        if quality >= 3:
+            if interval == 1: interval = 2
+            elif interval == 2: interval = 4
+            else: interval = int(interval * ef)
+        else: interval = 1
         ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
         if ef < 1.3: ef = 1.3
-        
         next_date = (datetime.now() + timedelta(days=interval)).strftime("%Y-%m-%d %H:%M")
-        cursor.execute("INSERT OR REPLACE INTO word_memory (username, word, interval, ease_factor, next_review) VALUES (?, ?, ?, ?, ?)", 
-                       (username, word, interval, ef, next_date))
+        cursor.execute("INSERT OR REPLACE INTO word_memory (word, interval, ease_factor, next_review) VALUES (?, ?, ?, ?)", (word, interval, ef, next_date))
         conn.commit()
         conn.close()
 
     @staticmethod
     def initialize():
         SessionManager.init_db()
-        if "active_user" not in st.session_state: st.session_state.active_user = None
-        if "user" not in st.session_state: st.session_state.user = None
+        if "lang" not in st.session_state:
+            st.session_state.lang = "EL"
+        if "user" not in st.session_state:
+            db_user = SessionManager.load_from_db()
+            if db_user: st.session_state.user = db_user
+            else:
+                st.session_state.user = {
+                    "name": "Alex", "xp": 40, "level": 1, "plan": "Free", "history": [], "mood": "Calm / Ήρεμος", "age": 5,
+                    "mood_history": ["Calm / Ήρεμος"], "xp_history": [10, 20, 40],
+                    "onboarded": False, "usage_count": 0, "max_usage": 3, "vocab_bonus": False
+                }
         if "page" not in st.session_state: st.session_state.page = "login"
         if "current_role" not in st.session_state: st.session_state.current_role = None
 
@@ -363,7 +352,7 @@ class SessionManager:
         st.session_state.user["xp"] += points
         st.session_state.user["xp_history"].append(st.session_state.user["xp"])
         st.session_state.user["level"] = (st.session_state.user["xp"] // 100) + 1
-        SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
+        SessionManager.save_to_db(st.session_state.user)
 
     @staticmethod
     def check_screen_time():
@@ -371,310 +360,276 @@ class SessionManager:
         return False
 
 # =================================================================
-# MODULE 5: UI COMPONENTS & RENDERING
+# MODULE 5: PRESENTATION LAYER & INTERFACE
 # =================================================================
-def render_hud():
+def render_hud(t):
     remaining = max(0, st.session_state.user["max_usage"] - st.session_state.user["usage_count"]) if st.session_state.user["plan"] == "Free" else "∞"
     current_level_base = (st.session_state.user["level"] - 1) * 100
     xp_in_level = st.session_state.user["xp"] - current_level_base
     progress_percentage = min(100, max(5, xp_in_level))
 
     st.markdown(f"""
-        <div class="premium-card" style="padding: 20px; border-left: 6px solid #58cc02;">
+        <div class="premium-card" style="padding: 20px; border-left: 6px solid #6366f1;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-size:16px; font-weight:900; color:#58cc02;">🏆 ΕΠΙΠΕΔΟ {st.session_state.user['level']}</span>
-                <span style="font-size:14px; font-weight:bold; color:#777777;">✨ {st.session_state.user['xp']} / {st.session_state.user['level'] * 100} XP</span>
+                <span style="font-size:16px; font-weight:900; color:#818cf8;">🏆 {t['level']} {st.session_state.user['level']}</span>
+                <span style="font-size:14px; font-weight:bold; color:#94a3b8;">✨ {st.session_state.user['xp']} / {st.session_state.user['level'] * 100} {t['xp_label']}</span>
             </div>
             <div class="duo-progress-container">
                 <div class="duo-progress-bar" style="width: {progress_percentage}%;"></div>
             </div>
-            <div style="display: flex; gap: 15px; font-size:13px; color:#3c3c3c; margin-top: 12px; font-weight: bold;">
-                <span>👤 <b>Παιδί:</b> {st.session_state.user['name']} ({st.session_state.user['age']} ετών)</span> | 
-                <span>🎭 <b>Διάθεση:</b> {st.session_state.user['mood']}</span> | 
-                <span>⏳ <b>Μηνύματα:</b> {remaining}</span> | 
-                <span>💎 <b>Πλάνο:</b> <span style="color:#58cc02;">{st.session_state.user['plan']}</span></span>
+            <div style="display: flex; gap: 15px; font-size:13px; color:#cbd5e1; margin-top: 12px; font-weight: bold;">
+                <span>👤 <b>{t['child_prof']}</b> {st.session_state.user['name']}</span> | 
+                <span>🎭 <b>{t['mood_label']}</b> {st.session_state.user['mood']}</span> | 
+                <span>⏳ <b>{t['msgs_label']}</b> {remaining}</span> | 
+                <span>💎 <b>{t['plan_label']}</b> <span style="color:#10b981;">{st.session_state.user['plan']}</span></span>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-def render_sidebar():
+def render_sidebar(t):
+    st.sidebar.markdown("### 🌐 Language / Γλώσσα")
+    selected_lang = st.sidebar.selectbox(
+        "Choose interface language:",
+        options=["EL", "EN"],
+        index=0 if st.session_state.lang == "EL" else 1,
+        format_func=lambda x: "🇬🇷 Ελληνικά" if x == "EL" else "🇬🇧 English"
+    )
+    if selected_lang != st.session_state.lang:
+        st.session_state.lang = selected_lang
+        st.rerun()
+
     if st.session_state.page not in ["login", "onboarding"]:
-        st.sidebar.title("📌 Φοίβος AI")
-        st.sidebar.info(f"👤 Λογαριασμός: **{st.session_state.active_user}**")
+        st.sidebar.title(t["nav_title"])
+        st.sidebar.info(f"{t['active_role']} **{st.session_state.current_role}**")
         
-        if st.session_state.current_role == "Γονέας":
-            if st.sidebar.button("🗺️ Κόσμοι Περιπέτειας", use_container_width=True): st.session_state.page = "hub"; st.rerun()
-            if st.sidebar.button("🧠 Γλωσσική Μνήμη (SM-2)", use_container_width=True): st.session_state.page = "memory_core"; st.rerun()
-            if st.sidebar.button("📊 Στατιστικά Γονέα", use_container_width=True): st.session_state.page = "parent_dashboard"; st.rerun()
-            if st.sidebar.button("⚙️ Ρυθμίσεις Προφίλ", use_container_width=True): st.session_state.page = "profile_settings"; st.rerun()
+        if st.session_state.current_role in ["Γονέας", "Parent"]:
+            if st.sidebar.button(t["btn_worlds"], use_container_width=True): st.session_state.page = "hub"; st.rerun()
+            if st.sidebar.button(t["btn_memory"], use_container_width=True): st.session_state.page = "memory_core"; st.rerun()
+            if st.sidebar.button(t["btn_parent"], use_container_width=True): st.session_state.page = "parent_dashboard"; st.rerun()
+            if st.sidebar.button(t["btn_settings"], use_container_width=True): st.session_state.page = "profile_settings"; st.rerun()
         
-        elif st.session_state.current_role == "Εκπαιδευτικός":
-            if st.sidebar.button("🏫 Πύλη Εκπαιδευτικού", use_container_width=True): st.session_state.page = "educator_portal"; st.rerun()
+        elif st.session_state.current_role in ["Εκπαιδευτικός", "Educator"]:
+            if st.sidebar.button(t["btn_portal"], use_container_width=True): st.session_state.page = "educator_portal"; st.rerun()
             
         st.sidebar.write("---")
-        if st.sidebar.button("🚪 Αποσύνδεση", use_container_width=True):
+        if st.sidebar.button(t["btn_logout"], use_container_width=True):
             st.session_state.page = "login"
-            st.session_state.active_user = None
-            st.session_state.user = None
             st.session_state.current_role = None
+            st.session_state.user["history"] = []
             st.rerun()
 
 def main():
     AppConfig.inject_premium_styles()
     SessionManager.initialize()
-    render_sidebar()
+    t = AppConfig.TRANSLATIONS[st.session_state.lang]
+    render_sidebar(t)
     brain = PhoebusBrain()
 
-    # --- STRIPE LIVE DETECTION & PERMANENT UPGRADE ---
-    query_params = st.query_params
-    if "payment" in query_params and query_params["payment"] == "success" and st.session_state.active_user:
-        if st.session_state.user:
-            st.session_state.user["plan"] = "Pro"
-            st.session_state.user["max_usage"] = 999999
-            SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
-        st.balloons()
-        st.success("🎉 Η πληρωμή ολοκληρώθηκε μόνιμα! Το προφίλ σας αναβαθμίστηκε σε Pro!")
-        st.query_params.clear()
-        time.sleep(1)
-        st.rerun()
-
-    # --- PAGE: LOGIN ---
+    # --- PAGE: UNIFIED AUTHENTICATION ---
     if st.session_state.page == "login":
-        st.title("🚀 Φοίβος AI Μέντορας")
-        st.subheader("Η έξυπνη, συναισθηματική πλατφόρμα ανάπτυξης λόγου.")
+        st.title(AppConfig.TITLE)
+        st.subheader(t["title_sub"])
         
-        auth_tab1, auth_tab2 = st.tabs(["🔑 Σύνδεση", "📝 Εγγραφή"])
+        st.markdown(f"""
+            <div class="premium-card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); text-align: center; border: none;">
+                <h2 style="color: white; font-weight: 900; margin: 0;">{t['banner_h']}</h2>
+                <p style="color: #bfdbfe; margin-top: 8px; font-size: 16px;">{t['banner_p']}</p>
+            </div>
+        """, unsafe_allow_html=True)
         
-        with auth_tab1:
-            login_user = st.text_input("Όνομα Χρήστη / Email:", key="log_user")
-            login_pass = st.text_input("Κωδικός Πρόσβασης:", type="password", key="log_pass")
-            if st.button("🚀 Είσοδος", use_container_width=True):
-                auth_result = SessionManager.authenticate_user(login_user, login_pass)
-                if auth_result:
-                    role, plan = auth_result
-                    st.session_state.active_user = login_user
+        tab_login, tab_reg = st.tabs([t["tab_login"], t["tab_register"]])
+        
+        with tab_login:
+            login_user = st.text_input(t["username"], key="log_u")
+            login_pass = st.text_input(t["password"], type="password", key="log_p")
+            if st.button(t["btn_login"], use_container_width=True):
+                role = SessionManager.authenticate_user(login_user, login_pass)
+                if role:
                     st.session_state.current_role = role
-                    st.session_state.user = SessionManager.load_profile_from_db(login_user, role, plan)
-                    
-                    st.success(f"Καλώς ορίσατε!")
-                    time.sleep(0.5)
-                    st.session_state.page = "hub" if role == "Γονέας" and st.session_state.user["onboarded"] else ("onboarding" if role == "Γονέας" else "educator_portal")
+                    st.success(f"{t['login_success']} {role}!")
+                    time.sleep(1)
+                    if role in ["Γονέας", "Parent"]:
+                        st.session_state.page = "hub" if st.session_state.user["onboarded"] else "onboarding"
+                    else:
+                        st.session_state.page = "educator_portal"
                     st.rerun()
                 else:
-                    st.error("❌ Λανθασμένα στοιχεία σύνδεσης!")
+                    st.error(t["login_fail"])
                     
-        with auth_tab2:
-            reg_user = st.text_input("Όνομα Χρήστη:", key="reg_user")
-            reg_pass = st.text_input("Κωδικός Πρόσβασης:", type="password", key="reg_pass")
-            reg_role = st.selectbox("Ρόλος:", ["Γονέας", "Εκπαιδευτικός"])
-            if st.button("📝 Ολοκλήρωση Εγγραφής", use_container_width=True):
-                if reg_user.strip() and reg_pass.strip():
-                    if SessionManager.register_user(reg_user, reg_pass, reg_role): 
-                        st.success("🎉 Ο λογαριασμός δημιουργήθηκε!")
-                    else: 
-                        st.error("❌ Το όνομα χρήστη υπάρχει ήδη.")
+        with tab_reg:
+            reg_user = st.text_input(t["username"], key="reg_u")
+            reg_pass = st.text_input(t["password"], type="password", key="reg_p")
+            role_options = [t["role_parent"], t["role_teacher"]]
+            reg_role = st.selectbox(t["role_select"], role_options)
+            
+            if st.button(t["btn_register"], use_container_width=True):
+                if not reg_user.strip() or not reg_pass.strip():
+                    st.error(t["fill_fields"])
+                else:
+                    success = SessionManager.register_user(reg_user, reg_pass, reg_role)
+                    if success: st.success(t["reg_success"])
+                    else: st.error(t["reg_fail"])
 
     # --- PAGE: ONBOARDING ---
     elif st.session_state.page == "onboarding":
-        st.title("👋 Προφίλ Μικρού Εξερευνητή")
+        st.title(t["onboard_title"])
+        st.subheader(t["onboard_sub"])
         with st.form("onboarding_form"):
-            onboard_name = st.text_input("Όνομα Παιδιού:")
-            onboard_age = st.number_input("Ηλικία Παιδιού (3-12):", min_value=3, max_value=12, value=5)
-            if st.form_submit_button("🚀 Έναρξη Περιπέτειας!", use_container_width=True):
-                if onboard_name.strip():
+            onboard_name = st.text_input(t["child_name"], placeholder="e.g. Alex / Νικόλας")
+            onboard_age = st.number_input(t["child_age"], min_value=3, max_value=12, value=5)
+            if st.form_submit_button(t["btn_start"], use_container_width=True):
+                if not onboard_name.strip():
+                    st.error(t["fill_fields"])
+                else:
                     st.session_state.user["name"] = onboard_name
                     st.session_state.user["age"] = onboard_age
                     st.session_state.user["onboarded"] = True
-                    SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
+                    SessionManager.save_to_db(st.session_state.user)
+                    st.success("🎉 Initialized!")
+                    time.sleep(1)
                     st.session_state.page = "hub"
                     st.rerun()
 
-    # --- PAGE: HUB ---
+    # --- PAGE: WORLD SELECTION HUB ---
     elif st.session_state.page == "hub":
-        render_hud()
-        st.title("🗺️ Διάλεξε Κόσμο")
+        render_hud(t)
+        st.title("🗺️ Worlds / Κόσμοι")
         if SessionManager.check_screen_time():
-            st.error("⏰ **Screen Time Guard:** Συμπληρώθηκε το όριο χρήσης!")
+            st.error(t["screen_guard"])
             return
-        
-        # Stripe Promo Card
-        if st.session_state.user["plan"] == "Free":
-            st.markdown("""
-                <div class="premium-card" style="border-left: 6px solid #1cb0f6; display: flex; justify-content: space-between; align-items: center; background: #e8f7fe;">
-                    <div>
-                        <b style="color: #1cb0f6; font-size: 16px;">💎 Γίνε Μέλος του Φοίβος Pro</b><br>
-                        <span style="color: #555555; font-size: 14px;">Ξεκλειδώστε απεριόριστο χρόνο ομιλίας, βαθύτερη ανίχνευση συναισθημάτων και μόνιμη πρόσβαση χωρίς περιορισμούς!</span>
-                    </div>
-                    <a href="https://buy.stripe.com/test_9B6eVc3Jcb0DgBrdal9Ve00" target="_blank" style="text-decoration: none; background: #1cb0f6; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 900; text-transform: uppercase; font-size: 13px; border-bottom: 4px solid #148ec7;">Αναβαθμιση</a>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        cols = st.columns(3)
-        for i, (name, data) in enumerate(AppConfig.THEMES.items()):
-            with cols[i]:
-                st.markdown(f"<div style='background: {data['bg']}; padding:25px; border-radius:20px; border: 2px solid {data['color']}; text-align:center;'><h2>{data['icon']}</h2><h4>{name}</h4></div>", unsafe_allow_html=True)
-                if st.button(f"Είσοδος", key=name, use_container_width=True):
-                    st.session_state.current_world = name
-                    st.session_state.page = "adventure"
-                    st.rerun()
-
-    # --- PAGE: ADVENTURE ---
-    elif st.session_state.page == "adventure":
-        render_hud()
-        if SessionManager.check_screen_time():
-            st.error("⏰ **Screen Time Guard:** Το όριο χρήσης συμπληρώθηκε!")
-            return
-
-        world = st.session_state.current_world
-        col_title, col_back = st.columns([4, 1])
-        with col_title: st.header(f"{AppConfig.THEMES[world]['icon']} {world}")
-        with col_back:
-            if st.button("↩️ Πίσω", use_container_width=True): st.session_state.page = "hub"; st.rerun()
-
-        current_mood = st.session_state.user["mood"].lower()
-        avatar_icon, bubble_class = ("🧸✨", "phoebus-bubble")
-        if "κουρασμένος" in current_mood or "λυπημένος" in current_mood:
-            avatar_icon, bubble_class = ("🧸💤", "phoebus-bubble")
 
         st.markdown(f"""
-            <div style="padding: 20px; border-radius: 20px; border: 2px solid #e5e5e5; background: #f7f7f7; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
-                <div style="font-size: 50px; background: white; padding: 10px; border-radius: 50%; border: 2px solid #e5e5e5;">{avatar_icon}</div>
-                <div>
-                    <b style="color: #3c3c3c; font-size: 18px;">Φοίβος</b><br>
-                    <span style="color: #777777; font-size: 14px;">🌟 Μέντορας Λόγου • Κατάσταση: <b>{st.session_state.user['mood']}</b></span>
-                </div>
+            <div class="premium-card" style="border-left: 5px solid #10b981; display:flex; justify-content:space-between; align-items:center;">
+                <div>{t['stripe_text']}</div>
+                <a href="https://buy.stripe.com/5kA6oE736g1Y5JCdQQ" target="_blank" style="text-decoration:none; background:#10b981; color:white; padding:8px 16px; border-radius:8px; font-weight:bold;">{t['stripe_btn']}</a>
             </div>
         """, unsafe_allow_html=True)
 
-        # 🧠 Παιδαγωγικό Scaffolding (Έξυπνα Voice Prompts)
-        st.markdown("<p style='font-weight: 900; color: #1cb0f6; font-size: 14px; text-transform: uppercase;'>💡 Ιδέες για να μιλήσεις στον Φοίβο:</p>", unsafe_allow_html=True)
-        suggested = AppConfig.THEMES[world]["suggested_questions"]
-        for q in suggested:
-            st.markdown(f"<span class='suggestion-chip'>{q}</span>", unsafe_allow_html=True)
+        cols = st.columns(3)
+        for i, (key, data) in enumerate(AppConfig.THEMES.items()):
+            display_title = data["name_en"] if st.session_state.lang == "EN" else key
+            with cols[i]:
+                st.markdown(f"<div style='background: {data['bg']}; padding:30px; border-radius:20px; border: 2px solid {data['color']}; text-align:center;'><h2>{data['icon']} {display_title}</h2></div>", unsafe_allow_html=True)
+                if st.button(f"Enter: {display_title}", key=key, use_container_width=True):
+                    st.session_state.current_world = key
+                    st.session_state.page = "adventure"
+                    st.rerun()
 
-        st.write("---")
+    # --- PAGE: INTERACTIVE ADVENTURE ---
+    elif st.session_state.page == "adventure":
+        render_hud(t)
+        if SessionManager.check_screen_time():
+            st.error(t["screen_guard"])
+            return
 
-        # Διάλογος
+        world_key = st.session_state.current_world
+        world_data = AppConfig.THEMES[world_key]
+        display_world = world_data["name_en"] if st.session_state.lang == "EN" else world_key
+
+        col_title, col_back = st.columns([4, 1])
+        with col_title: st.header(f"{world_data['icon']} {display_world}")
+        with col_back:
+            if st.button(t["change_world"], use_container_width=True): st.session_state.page = "hub"; st.rerun()
+
+        st.markdown(f"""
+            <div class="premium-card" style="padding:15px; border-left: 4px solid {world_data['color']}; margin-bottom:15px;">
+                <div class="smart-action-title">{t['magic_tag']}</div>
+                <span style="font-size:13px; color:#94a3b8;">{t['magic_desc'].format(age=st.session_state.user['age'])}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.caption(t["beebot_caption"])
+
+        # Chat Bubble Stream
         for msg in st.session_state.user["history"]:
             if msg["role"] == "assistant":
-                st.markdown(f'<div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px;"><div class="{bubble_class}"><b>Φοίβος:</b> {msg["content"]}</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px;"><div style="font-size: 24px;">🧸</div><div class="phoebus-bubble" style="border-left-color: {world_data["color"]};"><b>Phoebus:</b> {msg["content"]}</div></div>', unsafe_allow_html=True)
             else:
                 with st.chat_message("user"): st.write(msg["content"])
 
-        user_speech = VoiceEngine.listen()
+        user_speech = VoiceEngine.listen(t)
         if user_speech:
             st.session_state.user["history"].append({"role": "user", "content": user_speech})
             st.session_state.user["usage_count"] += 1
             
-            world_words = {
-                "🌿 Πράσινη Εδέμ": "δέντρο",
-                "🏝️ Νησί Γρίφων": "γρίφος",
-                "🚀 Διάστημα": "αστέρι"
-            }
-            current_target = world_words.get(world, "λουλούδι")
+            # Repetition tracking
+            if t["target_word"] in user_speech.lower():
+                SessionManager.update_word_memory(t["target_word"], 5)
+                if not st.session_state.user["vocab_bonus"]:
+                    st.session_state.user["vocab_bonus"] = True
+                    SessionManager.add_xp(50)
+                    st.toast("🎯 Vocabulary Bonus Triggered!", icon="✨")
 
-            with st.spinner("Ο Φοίβος σε ακούει..."):
-                mood_data = brain.analyze_sentiment(user_speech)
-                st.session_state.user["mood"] = mood_data["mood"]
-                st.session_state.user["mood_history"].append(mood_data["mood"])
-                
-                quality_score = brain.evaluate_vocabulary(user_speech, current_target)
-                
-                # 🏆 INSTANT GAMIFIED ACHIEVEMENTS (Pop-up εφέ)
-                if current_target in user_speech.lower() or quality_score >= 4:
-                    SessionManager.update_word_memory(st.session_state.active_user, current_target, quality_score)
-                    st.balloons() # Εντυπωσιακό εφέ μπαλονιών στην οθόνη του παιδιού!
-                    st.toast(f"🎉 ΜΠΡΑΒΟ! Ξεκλείδωσες τη λέξη '{current_target}' με σκορ {quality_score}/5!", icon="🏆")
-                    SessionManager.add_xp(50) # Έξτρα XP για το Achievement
-                else:
-                    SessionManager.add_xp(20)
+            with st.spinner(t["phoebus_listening"]):
+                mood_data = brain.analyze_sentiment(user_speech, st.session_state.lang)
+                st.session_state.user["mood"] = mood_data.get("mood", "Calm")
+                st.session_state.user["mood_history"].append(st.session_state.user["mood"])
                 
                 response = brain.generate_response(
-                    st.session_state.user["history"], 
-                    mood_data, 
-                    AppConfig.THEMES[world]["prompt"], 
-                    st.session_state.user["age"],
-                    current_target
+                    st.session_state.user["history"], mood_data, world_key, st.session_state.user["age"], st.session_state.lang
                 )
-                
                 st.session_state.user["history"].append({"role": "assistant", "content": response})
-                VoiceEngine.speak(response)
+                SessionManager.add_xp(20)
+                VoiceEngine.speak(response, lang=t["tts_lang"])
                 st.rerun()
 
-    # --- PAGE: MEMORY CORE ---
+    # --- PAGE: LANGUAGE MEMORY CORE ---
     elif st.session_state.page == "memory_core":
-        st.title("🧠 Σύστημα Γλωσσικής Μνήμης")
-        st.subheader("Αλγόριθμος Spaced Repetition (SM-2)")
-        
+        st.title(t["btn_memory"])
         conn = sqlite3.connect("pedago.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT word, interval, ease_factor, next_review FROM word_memory WHERE username = ?", (st.session_state.active_user,))
+        cursor.execute("SELECT word, interval, ease_factor, next_review FROM word_memory")
         rows = cursor.fetchall()
         conn.close()
-        
         if rows:
-            cards_data = pd.DataFrame(rows, columns=['Λέξη-Στόχος', 'Επόμενος Έλεγχος (Ημέρες)', 'Ease Factor (EF)', 'Ημερομηνία Επανάληψης'])
+            cols_names = ['Word / Lexeme', 'Interval (Days)', 'Ease Factor', 'Next Review'] if st.session_state.lang == "EN" else ['Λέξη / Έννοια', 'Μεσοδιάστημα (Ημέρες)', 'Συντελεστής Ευκολίας', 'Επόμενος Έλεγχος']
+            cards_data = pd.DataFrame(rows, columns=cols_names)
             st.dataframe(cards_data, use_container_width=True)
-            
-            fig_anki = go.Figure([go.Bar(x=cards_data['Λέξη-Στόχος'], y=cards_data['Επόμενος Έλεγχος (Ημέρες)'], marker_color='#58cc02')])
-            fig_anki.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#3c3c3c'))
+            fig_anki = go.Figure([go.Bar(x=cards_data[cols_names[0]], y=cards_data[cols_names[1]], marker_color='#10b981')])
+            fig_anki.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
             st.plotly_chart(fig_anki, use_container_width=True)
-        else: 
-            st.warning("🔒 Καμία λέξη δεν έχει καταγραφεί ακόμα για αυτόν τον λογαριασμό.")
-
-    # --- PAGE: PARENT DASHBOARD ---
-    elif st.session_state.page == "parent_dashboard":
-        st.title("📊 Αναφορές & Δεξιότητες Παιδιού")
-        render_hud()
-        
-        # 📊 Δημιουργία Αναφοράς AI για τον Γονέα
-        st.write("### 🤖 Παιδαγωγική Αναφορά Φοίβου (AI Expert Report)")
-        if len(st.session_state.user["history"]) >= 2:
-            if st.button("📝 Δημιουργία Νέας Αναφοράς Προόδου", use_container_width=True):
-                with st.spinner("Ο Φοίβος αναλύει την πρόοδο..."):
-                    report = brain.generate_parent_report(
-                        st.session_state.user["history"], 
-                        st.session_state.user["name"], 
-                        st.session_state.user["age"]
-                    )
-                    st.markdown(f"<div class='premium-card' style='border-top: 6px solid #ffc800; background: #fffdf5;'>{report}</div>", unsafe_allow_html=True)
         else:
-            st.info("💡 Μόλις το παιδί ξεκινήσει να μιλάει με τον Φοίβο, εδώ θα εμφανιστεί η αναλυτική αναφορά προόδου!")
+            st.warning("🔒 No active vocabulary entries recorded yet.")
 
-        col_chart1, col_chart2 = st.columns(2)
-        with col_chart1:
-            st.write("### 📊 Παιδαγωγικό Προφίλ")
-            categories = ['Λεξιλόγιο', 'Κριτική Σκέψη', 'Συναισθηματική Αυτορύθμιση', 'Ταχύτητα Απόκρισης', 'Φαντασία']
+    # --- PAGE: PARENT ANALYTICS ---
+    elif st.session_state.page == "parent_dashboard":
+        st.title(t["btn_parent"])
+        render_hud(t)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("### 📊 Cognitive Competency Radar")
+            cats = ['Vocabulary', 'Critical Thinking', 'Self-Regulation', 'Speech Latency', 'Empathy'] if st.session_state.lang == "EN" else ['Λεξιλόγιο', 'Κριτική Σκέψη', 'Αυτορύθμιση', 'Ταχύτητα Απόκρισης', 'Ενσυναίσθηση']
             fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(r=[4, 3, 5, 4, 4], theta=categories, fill='toself', marker=dict(color='#1cb0f6'), fillcolor='rgba(28, 176, 246, 0.3)'))
-            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#3c3c3c'))
+            fig_radar.add_trace(go.Scatterpolar(r=[4, 3, 5, 4, 4], theta=cats, fill='toself', marker=dict(color='#6366f1'), fillcolor='rgba(99, 102, 241, 0.3)'))
+            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
             st.plotly_chart(fig_radar, use_container_width=True)
-        with col_chart2:
-            st.write("### 📈 Εξέλιξη Μάθησης (XP)")
-            fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#58cc02', width=3)))
-            fig_xp.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#3c3c3c'))
+        with col2:
+            st.write("### 📈 Learning Trajectory (XP)")
+            fig_xp = go.Figure(data=go.Scatter(y=st.session_state.user["xp_history"], mode='lines+markers', line=dict(color='#10b981', width=3)))
+            fig_xp.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
             st.plotly_chart(fig_xp, use_container_width=True)
 
     # --- PAGE: EDUCATOR PORTAL ---
     elif st.session_state.page == "educator_portal":
-        st.title("🏫 Educator Portal (Στατιστικά Τάξης)")
+        st.title(t["btn_portal"])
+        st.info("💡 e-me / Open eClass API Gateway Interface: Active & Synchronized.")
         class_data = pd.DataFrame({
-            'Μαθητής': ['Νικόλας', 'Μαρία', 'Γιώργος', 'Ελένη', 'Δημήτρης'],
-            'Εβδομαδιαία XP': [120, 240, 90, 310, 150],
-            'Κυρίαρχο Συναίσθημα': ['Χαρούμενος', 'Ενθουσιώδης', 'Κουρασμένος', 'Χαρούμενος', 'Ήρεμος']
+            'Student': ['Nicolas', 'Maria', 'George', 'Elena', 'Dimitris'],
+            'Weekly XP': [120, 240, 90, 310, 150],
+            'Dominant Affect': ['Happy', 'Enthusiastic', 'Fatigued', 'Happy', 'Calm']
         })
         st.table(class_data)
 
     # --- PAGE: PROFILE SETTINGS ---
     elif st.session_state.page == "profile_settings":
-        st.title("⚙️ Ρυθμίσεις Προφίλ")
-        new_name = st.text_input("Όνομα Παιδιού:", value=st.session_state.user["name"])
-        new_age = st.number_input("Ηλικία Παιδιού:", min_value=3, max_value=12, value=st.session_state.user["age"])
-        if st.button("💾 Αποθήκευση", use_container_width=True):
+        st.title(t["btn_settings"])
+        new_name = st.text_input(t["child_name"], value=st.session_state.user["name"])
+        new_age = st.number_input(t["child_age"], min_value=3, max_value=12, value=st.session_state.user["age"])
+        if st.button("💾 Save Changes", use_container_width=True):
             st.session_state.user["name"] = new_name
             st.session_state.user["age"] = new_age
-            SessionManager.save_to_db(st.session_state.active_user, st.session_state.user)
-            st.success("Οι αλλαγές αποθηκεύτηκαν!")
+            SessionManager.save_to_db(st.session_state.user)
+            st.success("Updated successfully!")
             st.rerun()
 
 if __name__ == "__main__":
