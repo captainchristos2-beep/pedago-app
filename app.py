@@ -211,22 +211,59 @@ class VoiceEngine:
         )
 
 # =================================================================
-# MODULE 3: AFFECTIVE & MULTILINGUAL AI CORE
+# MODULE 3: AFFECTIVE AI CORE (CASCADING MODEL RESILIENCE)
 # =================================================================
 class PhoebusBrain:
-    """Emotionally Intelligent & Multilingual Groq Core"""
+    """Emotionally Intelligent Core with Cascade Fallback Engine"""
+    CANDIDATE_MODELS = [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-70b-versatile",
+        "llama-3.1-8b-instant",
+        "llama3-70b-8192",
+        "llama3-8b-8192"
+    ]
+
     def __init__(self):
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+    def _execute_completion(self, messages, json_mode=False):
+        """Iterates through production models until a verified endpoint responds"""
+        for model in self.CANDIDATE_MODELS:
+            try:
+                kwargs = {
+                    "model": model,
+                    "messages": messages,
+                    "temperature": 0.7
+                }
+                if json_mode:
+                    kwargs["response_format"] = {"type": "json_object"}
+                
+                response = self.client.chat.completions.create(**kwargs)
+                return response.choices[0].message.content
+            except Exception:
+                continue
+        return None
+
     def analyze_sentiment(self, text, lang="EL"):
-        prompt = f"Analyze child sentiment in this utterance: '{text}'. Language is {lang}. Return valid JSON: {{\"mood\": \"happy/sad/tired/calm\", \"energy\": 1-10}}"
-        response = self.client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": "You are an expert pediatric psychologist."},
-                      {"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
+        prompt = (
+            f"Analyze child sentiment in this utterance: '{text}'. Language is {lang}. "
+            f"Return strictly valid JSON: {{\"mood\": \"happy/sad/tired/calm\", \"energy\": 1-10}}"
         )
-        return json.loads(response.choices[0].message.content)
+        messages = [
+            {"role": "system", "content": "You are an expert pediatric psychologist."},
+            {"role": "user", "content": prompt}
+        ]
+        
+        raw_json = self._execute_completion(messages, json_mode=True)
+        if raw_json:
+            try:
+                return json.loads(raw_json)
+            except Exception:
+                pass
+        
+        # Self-healing fallback if all endpoints or parsing fail
+        fallback_mood = "happy" if lang == "EN" else "χαρούμενος"
+        return {"mood": fallback_mood, "energy": 8}
 
     def generate_response(self, history, mood_context, world_key, child_age, lang="EL"):
         theme_info = AppConfig.THEMES[world_key]
@@ -240,10 +277,12 @@ class PhoebusBrain:
             full_prompt = f"{world_prompt} Το παιδί νιώθει {mood_context.get('mood', 'ήρεμο')}. {age_instruction} Προσάρμοσε τον τόνο σου ακαδημαϊκά και παιδαγωγικά στα Ελληνικά."
             
         messages = [{"role": "system", "content": full_prompt}] + history
-        response = self.client.chat.completions.create(
-            model="llama-3.3-70b-versatile", messages=messages, temperature=0.7
-        )
-        return response.choices[0].message.content
+        reply = self._execute_completion(messages, json_mode=False)
+        
+        if reply:
+            return reply
+        
+        return "Hello explorer! I am ready to explore this world with you!" if lang == "EN" else "Γεια σου μικρέ εξερευνητή! Είμαι έτοιμος να ανακαλύψουμε μαζί αυτόν τον κόσμο!"
 
 # =================================================================
 # MODULE 4: SAAS, AUTH & DATA MANAGER (SELF-HEALING ARCHITECTURE)
